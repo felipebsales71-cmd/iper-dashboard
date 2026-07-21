@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#082d52" />
+  <meta name="description" content="IPER — painel público de gestão previdenciária." />
+  <title>IPER | Painel de Gestão Previdenciária</title>
+  <link rel="preload" href="assets/logo-iper.png" as="image" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#dashboard">Pular para o dashboard</a>
+
+  <header class="topbar" id="topbar">
+    <a class="brand" href="#inicio" aria-label="IPER — início">
+      <img src="assets/logo-iper.png" alt="IPER — Instituto de Previdência do Estado de Roraima" />
+      <span><strong>IPER</strong><small>Painel de Gestão Previdenciária</small></span>
+    </a>
+    <nav aria-label="Navegação principal">
+      <a href="#narrativa">Visão geral</a>
+      <a href="#dashboard">Dashboard</a>
+      <button class="admin-button" type="button" data-open-admin>Área administrativa</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="scroll-story" id="narrativa" aria-label="Apresentação do IPER">
+      <div class="story-stage" id="inicio">
+        <div class="ambient-grid" aria-hidden="true"></div>
+        <div class="story-progress" aria-hidden="true"><span id="storyProgress"></span></div>
+
+        <div class="story-visual" aria-hidden="true">
+          <div class="glow glow-a"></div>
+          <div class="glow glow-b"></div>
+          <img class="state-seal state-seal-iper" src="assets/logo-iper.png" alt="" />
+          <div class="data-orbit orbit-one"><span></span><span></span><span></span></div>
+          <div class="data-orbit orbit-two"><span></span><span></span><span></span></div>
+          <div class="chart-preview" id="chartPreview">
+            <span style="--h:36%"></span><span style="--h:54%"></span><span style="--h:47%"></span>
+            <span style="--h:70%"></span><span style="--h:66%"></span><span style="--h:88%"></span>
+          </div>
+          <div class="entity-map" id="entityMap">
+            <i style="--x:16%;--y:42%"></i><i style="--x:29%;--y:28%"></i><i style="--x:43%;--y:51%"></i>
+            <i style="--x:58%;--y:24%"></i><i style="--x:69%;--y:46%"></i><i style="--x:81%;--y:31%"></i>
+          </div>
+          <div class="debt-ring" id="debtRing"><span></span><strong>Débitos</strong></div>
+        </div>
+
+        <div class="story-copy" id="storyCopy">
+          <article class="story-panel is-active" data-scene="0">
+            <p class="eyebrow">Governo do Estado de Roraima · IPER</p>
+            <img class="hero-logo hero-logo-gov" src="assets/brasao-roraima.png" alt="Brasão do Governo do Estado de Roraima" />
+            <h1>IPER</h1>
+            <p>Informação previdenciária clara, acessível e orientada à tomada de decisão.</p>
+          </article>
+
+          <article class="story-panel" data-scene="1">
+            <p class="eyebrow">Base consolidada</p>
+            <h2>Um panorama completo em uma única tela.</h2>
+            <p>Arrecadação, débitos, competências, entes, órgãos, responsáveis e processos organizados para consulta pública.</p>
+            <div class="headline-number"><strong data-kpi="records">—</strong><span>registros analisados</span></div>
+          </article>
+
+          <article class="story-panel" data-scene="2">
+            <p class="eyebrow">Indicadores gerais</p>
+            <h2>Os números mais importantes, sem complicação.</h2>
+            <div class="mini-kpis">
+              <div><span>Arrecadação</span><strong data-kpi="revenue">—</strong></div>
+              <div><span>Entes</span><strong data-kpi="entities">—</strong></div>
+              <div><span>Crescimento</span><strong data-kpi="growth">—</strong></div>
+            </div>
+          </article>
+
+          <article class="story-panel" data-scene="3">
+            <p class="eyebrow">Evolução mensal</p>
+            <h2>Compare períodos e identifique tendências.</h2>
+            <p>A rolagem revela a evolução da arrecadação mês a mês e destaca variações relevantes.</p>
+          </article>
+
+          <article class="story-panel" data-scene="4">
+            <p class="eyebrow">Distribuição por ente</p>
+            <h2>Veja onde os valores estão concentrados.</h2>
+            <p>Órgãos e unidades gestoras podem ser analisados por participação, situação e competência.</p>
+          </article>
+
+          <article class="story-panel" data-scene="5">
+            <p class="eyebrow">Situação dos débitos</p>
+            <h2>Do total consolidado ao registro individual.</h2>
+            <p>Filtros objetivos permitem localizar pendências, responsáveis e processos relacionados.</p>
+          </article>
+
+          <article class="story-panel" data-scene="6">
+            <p class="eyebrow">Consulta operacional</p>
+            <h2>Explore os dados com autonomia.</h2>
+            <p>Use filtros, gráficos interativos, pesquisa e tabela detalhada em qualquer dispositivo.</p>
+            <a class="primary-action" href="#dashboard">Abrir dashboard</a>
+          </article>
+        </div>
+
+        <div class="scroll-hint" aria-hidden="true"><span></span>Role para explorar</div>
+      </div>
+    </section>
+
+    <section class="dashboard" id="dashboard" aria-labelledby="dashboardTitle">
+      <div class="dashboard-shell">
+        <header class="dashboard-header">
+          <div>
+            <p class="eyebrow dark">Consulta pública</p>
+            <h2 id="dashboardTitle">Dashboard previdenciário</h2>
+            <p id="dataStatus">Carregando informações…</p>
+          </div>
+          <div class="dashboard-actions">
+            <button class="secondary-button" id="resetFilters" type="button">Limpar filtros</button>
+            <button class="primary-button" type="button" data-open-admin>Administrar</button>
+          </div>
+        </header>
+
+        <form class="filters" id="filterForm" aria-label="Filtros do dashboard">
+          <label>Pesquisa geral<input id="searchInput" type="search" placeholder="Órgão, ente, processo ou responsável" /></label>
+          <label>Ano<select id="yearFilter"><option value="">Todos</option></select></label>
+          <label>Mês / competência<select id="monthFilter"><option value="">Todos</option></select></label>
+          <label>Ente / Poder<select id="entityFilter"><option value="">Todos</option></select></label>
+          <label>Órgão<select id="agencyFilter"><option value="">Todos</option></select></label>
+          <label>Fundo<select id="fundFilter"><option value="">Todos</option></select></label>
+          <label>Categoria<select id="categoryFilter"><option value="">Todas</option></select></label>
+          <label>Situação<select id="statusFilter"><option value="">Todas</option></select></label>
+          <label>Tipo de débito<select id="debtTypeFilter"><option value="">Todos</option></select></label>
+          <label>Responsável<select id="ownerFilter"><option value="">Todos</option></select></label>
+          <label>Data inicial<input id="startDate" type="date" /></label>
+          <label>Data final<input id="endDate" type="date" /></label>
+        </form>
+
+        <section class="kpi-grid" aria-label="Indicadores principais">
+          <article class="kpi-card"><span>Arrecadação total</span><strong id="revenueKpi">—</strong><small id="revenueDelta">—</small></article>
+          <article class="kpi-card"><span>Quantidade de órgãos</span><strong id="entitiesKpi">—</strong><small>órgãos no recorte selecionado</small></article>
+          <article class="kpi-card"><span>Crescimento</span><strong id="growthKpi">—</strong><small>comparação com o período anterior</small></article>
+          <article class="kpi-card"><span>Total de débitos</span><strong id="debtKpi">—</strong><small id="debtCount">—</small></article>
+          <article class="kpi-card"><span>Processos acompanhados</span><strong id="processKpi">—</strong><small>registros com processo vinculado</small></article>
+        </section>
+
+        <section class="chart-grid">
+          <article class="panel panel-wide">
+            <header><div><h3>Evolução mensal</h3><p>Arrecadação por competência</p></div><span class="legend-dot">Arrecadação</span></header>
+            <div class="chart-box" id="monthlyChart" role="img" aria-label="Gráfico de evolução mensal"></div>
+          </article>
+          <article class="panel">
+            <header><div><h3>Total por órgão</h3><p>Participação no período</p></div></header>
+            <div class="chart-box" id="agencyChart" role="img" aria-label="Gráfico de total por órgão"></div>
+          </article>
+          <article class="panel">
+            <header><div><h3>Situação dos débitos</h3><p>Distribuição dos registros</p></div></header>
+            <div class="chart-box" id="statusChart" role="img" aria-label="Gráfico de situação dos débitos"></div>
+          </article>
+        </section>
+
+        <section class="panel table-panel">
+          <header class="table-header">
+            <div><h3>Tabela detalhada</h3><p id="resultCount">—</p></div>
+            <button class="secondary-button" id="toggleColumns" type="button">Exibir mais colunas</button>
+          </header>
+          <div class="table-wrap" tabindex="0">
+            <table>
+              <thead><tr>
+                <th>Competência</th><th>Ente</th><th>Órgão</th><th>Categoria</th><th>Situação</th>
+                <th class="optional-column">Tipo de débito</th><th class="optional-column">Responsável</th><th class="optional-column">Processo</th>
+                <th>Arrecadação</th><th>Débito</th>
+              </tr></thead>
+              <tbody id="dataTable"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div><img src="assets/brasao-roraima.png" alt="Brasão do Estado de Roraima" /><span>Estado de Roraima · Instituto de Previdência do Estado de Roraima</span></div>
+    <p>IPER · Painel público de dados previdenciários</p>
+  </footer>
+
+  <dialog class="admin-dialog" id="adminDialog">
+    <form method="dialog">
+      <button class="close-dialog" aria-label="Fechar">×</button>
+      <p class="eyebrow dark">Área restrita</p>
+      <h2>Administração do IPER</h2>
+      <p>A versão pública é somente para consulta. A autenticação administrativa será conectada na etapa de integração, com permissões específicas para atualização e manutenção.</p>
+      <label>E-mail institucional<input type="email" placeholder="nome@iper.rr.gov.br" disabled /></label>
+      <label>Senha<input type="password" placeholder="••••••••" disabled /></label>
+      <button class="primary-button" type="button" disabled>Entrar</button>
+      <small>Protótipo visual: autenticação ainda não configurada.</small>
+    </form>
+  </dialog>
+
+  <div class="tooltip" id="tooltip" role="status" aria-live="polite"></div>
+  <script src="app.js" defer></script>
+</body>
+</html>

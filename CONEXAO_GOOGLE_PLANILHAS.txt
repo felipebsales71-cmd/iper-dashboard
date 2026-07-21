@@ -1,0 +1,4 @@
+Conexão configurada
+Endpoint: https://script.google.com/macros/s/AKfycbxpZpM5qYM7fLjqROHnCEcEhDa1jMS3IlsK3gi2S7xkwzydWOzA7CwzGtr6oYRFx0LA/exec
+Cache: 300 segundos
+Rota do dashboard: /api/dashboard

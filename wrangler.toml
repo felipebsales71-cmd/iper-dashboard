@@ -1,0 +1,7 @@
+name = "iper-dashboard"
+compatibility_date = "2026-07-20"
+pages_build_output_dir = "."
+
+[vars]
+GOOGLE_SHEETS_ENDPOINT = "https://script.google.com/macros/s/AKfycbxpZpM5qYM7fLjqROHnCEcEhDa1jMS3IlsK3gi2S7xkwzydWOzA7CwzGtr6oYRFx0LA/exec"
+DASHBOARD_CACHE_SECONDS = "300"
