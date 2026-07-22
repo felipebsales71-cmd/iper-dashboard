@@ -5,7 +5,6 @@
  * Ela pode ser substituída no Cloudflare pela variável GOOGLE_SHEETS_ENDPOINT.
  */
 const DEFAULT_GOOGLE_SHEETS_ENDPOINT = "https://script.google.com/macros/s/AKfycbxpZpM5qYM7fLjqROHnCEcEhDa1jMS3IlsK3gi2S7xkwzydWOzA7CwzGtr6oYRFx0LA/exec";
-const DEFAULT_CACHE_SECONDS = 15;
 
 function jsonError(message, status, details) {
   return Response.json(
@@ -22,31 +21,21 @@ function jsonError(message, status, details) {
 }
 
 export async function onRequestGet(context) {
-  const endpoint = context.env.GOOGLE_SHEETS_ENDPOINT || DEFAULT_GOOGLE_SHEETS_ENDPOINT;
-  const requestedCache = Number(context.env.DASHBOARD_CACHE_SECONDS || DEFAULT_CACHE_SECONDS);
-  const cacheSeconds = Number.isFinite(requestedCache)
-    ? Math.max(5, Math.min(requestedCache, 3600))
-    : DEFAULT_CACHE_SECONDS;
+  const endpointValue = context.env.GOOGLE_SHEETS_ENDPOINT || DEFAULT_GOOGLE_SHEETS_ENDPOINT;
+  const endpoint = new URL(endpointValue);
 
-  const requestUrl = new URL(context.request.url);
-  const forceRefresh = requestUrl.searchParams.get('refresh') === '1';
-  const cacheKey = new Request(
-    new URL('/api/dashboard-cache-v2', context.request.url),
-    { method: 'GET' }
-  );
-  const cache = caches.default;
-
-  if (!forceRefresh) {
-    const cached = await cache.match(cacheKey);
-    if (cached) return cached;
-  }
+  // Evita qualquer resposta reaproveitada entre o Cloudflare e o Apps Script.
+  endpoint.searchParams.set('_fresh', String(Date.now()));
 
   let upstream;
   try {
-    upstream = await fetch(endpoint, {
+    upstream = await fetch(endpoint.toString(), {
       method: 'GET',
       redirect: 'follow',
-      headers: { Accept: 'application/json,text/plain;q=0.9,*/*;q=0.8' }
+      headers: {
+        Accept: 'application/json,text/plain;q=0.9,*/*;q=0.8',
+        'Cache-Control': 'no-cache'
+      }
     });
   } catch (error) {
     return jsonError(
@@ -96,17 +85,19 @@ export async function onRequestGet(context) {
     source: payload.meta?.source || 'Google Planilhas do IPER',
     isDemo: false,
     connection: 'live',
+    cache: 'disabled',
     proxiedBy: 'Cloudflare Pages Functions'
   };
 
-  const response = Response.json(payload, {
+  return Response.json(payload, {
     headers: {
-      'Cache-Control': `public, max-age=${cacheSeconds}, s-maxage=${cacheSeconds}`,
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      'CDN-Cache-Control': 'no-store',
+      'Cloudflare-CDN-Cache-Control': 'no-store',
+      'Pragma': 'no-cache',
+      'Expires': '0',
       'Access-Control-Allow-Origin': '*',
       'X-Content-Type-Options': 'nosniff'
     }
   });
-
-  context.waitUntil(cache.put(cacheKey, response.clone()));
-  return response;
 }
