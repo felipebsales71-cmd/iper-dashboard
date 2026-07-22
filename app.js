@@ -1,4 +1,4 @@
-const state = { allRecords: [], filtered: [], meta: null, scene: 0 };
+const state = { allRecords: [], filtered: [], meta: null, scene: 0, monthlyMode: 'line' };
 const MONEY = new Intl.NumberFormat('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:2});
 const NUM = new Intl.NumberFormat('pt-BR');
 const PCT = new Intl.NumberFormat('pt-BR',{style:'percent',minimumFractionDigits:1,maximumFractionDigits:1});
@@ -48,7 +48,7 @@ async function loadData(){
 function populateFilters(){
   const mapping = [
     ['yearFilter','year'],['monthFilter','month'],['entityFilter','entity'],['agencyFilter','agency'],['fundFilter','fund'],
-    ['categoryFilter','category'],['statusFilter','status'],['debtTypeFilter','debtType'],['ownerFilter','owner']
+    ['categoryFilter','category'],['statusFilter','status']
   ];
   for(const [id,key] of mapping){
     const select = $('#'+id); const first = select.options[0]; select.innerHTML=''; select.append(first);
@@ -66,8 +66,7 @@ function applyFilters(){
   const term = $('#searchInput').value.trim().toLocaleLowerCase('pt-BR');
   const fields = {
     year:$('#yearFilter').value, month:$('#monthFilter').value, entity:$('#entityFilter').value,
-    agency:$('#agencyFilter').value, fund:$('#fundFilter').value, category:$('#categoryFilter').value, status:$('#statusFilter').value,
-    debtType:$('#debtTypeFilter').value, owner:$('#ownerFilter').value
+    agency:$('#agencyFilter').value, fund:$('#fundFilter').value, category:$('#categoryFilter').value, status:$('#statusFilter').value
   };
   const start = $('#startDate').value ? new Date($('#startDate').value+'T00:00:00') : null;
   const end = $('#endDate').value ? new Date($('#endDate').value+'T23:59:59') : null;
@@ -87,28 +86,25 @@ function applyFilters(){
 
 function renderKpis(){
   const revenue = sum(state.filtered,'revenue');
-  const debt = sum(state.filtered,'debt');
   const entities = new Set(state.filtered.map(r=>r.agency).filter(Boolean)).size;
-  const processes = new Set(state.filtered.map(r=>r.process).filter(Boolean)).size;
   const monthly = aggregate(state.filtered,'month','revenue').sort((a,b)=>monthKey(a.label)-monthKey(b.label));
   const previous = monthly.at(-2)?.value || 0; const latest = monthly.at(-1)?.value || 0;
   const growth = previous ? (latest-previous)/previous : 0;
-  $('#revenueKpi').textContent=MONEY.format(revenue); $('#entitiesKpi').textContent=NUM.format(entities);
-  $('#growthKpi').textContent=PCT.format(growth);
-  const caps=state.meta?.capabilities||{};
-  if(caps.debts===false){$('#debtKpi').textContent='Não disponível';$('#debtCount').textContent='A base atual não possui coluna de débitos';}else{$('#debtKpi').textContent=MONEY.format(debt);$('#debtCount').textContent=`${state.filtered.filter(r=>Number(r.debt)>0).length} registros com débito`;}
-  if(caps.processes===false){$('#processKpi').textContent='Não disponível';}else{$('#processKpi').textContent=NUM.format(processes);}
+  $('#revenueKpi').textContent=MONEY.format(revenue);
+  $('#entitiesKpi').textContent=NUM.format(entities);
+  $('#competencesKpi').textContent=NUM.format(monthly.length);
   $('#revenueDelta').textContent = monthly.length>1 ? `${growth>=0?'▲':'▼'} ${PCT.format(Math.abs(growth))} na última competência` : 'Sem comparação disponível';
 }
+
 
 function updateStoryKpis(){
   const revenue=sum(state.allRecords,'revenue'); const entities=new Set(state.allRecords.map(r=>r.agency).filter(Boolean)).size;
   const monthly=aggregate(state.allRecords,'month','revenue').sort((a,b)=>monthKey(a.label)-monthKey(b.label));
-  const prev=monthly.at(-2)?.value||0, last=monthly.at(-1)?.value||0, growth=prev?(last-prev)/prev:0;
+  const prev=monthly.at(-2)?.value||0, last=monthly.at(-1)?.value||0;
   $$('[data-kpi="records"]').forEach(el=>el.textContent=NUM.format(state.allRecords.length));
   $$('[data-kpi="revenue"]').forEach(el=>el.textContent=MONEY.format(revenue));
   $$('[data-kpi="entities"]').forEach(el=>el.textContent=NUM.format(entities));
-  $$('[data-kpi="growth"]').forEach(el=>el.textContent=PCT.format(growth));
+  $$('[data-kpi="competences"]').forEach(el=>el.textContent=NUM.format(monthly.length));
 }
 
 function aggregate(rows,key,valueKey){
@@ -121,10 +117,13 @@ function countBy(rows,key){
 }
 
 function renderCharts(){
-  renderLineChart($('#monthlyChart'),aggregate(state.filtered,'month','revenue').sort((a,b)=>monthKey(a.label)-monthKey(b.label)));
+  const monthlyData = aggregate(state.filtered,'month','revenue').sort((a,b)=>monthKey(a.label)-monthKey(b.label));
+  if(state.monthlyMode === 'bar') renderColumnChart($('#monthlyChart'), monthlyData, true);
+  else renderLineChart($('#monthlyChart'), monthlyData);
   renderBarChart($('#agencyChart'),aggregate(state.filtered,'agency','revenue').sort((a,b)=>b.value-a.value).slice(0,7));
-  renderDonut($('#statusChart'),countBy(state.filtered,'status'));
+  renderDonut($('#statusChart'),aggregate(state.filtered,'fund','revenue').sort((a,b)=>b.value-a.value));
 }
+
 
 function emptyChart(el){ el.innerHTML='<div class="chart-empty">Nenhum dado encontrado para os filtros selecionados.</div>'; }
 function renderLineChart(el,data){
@@ -134,12 +133,20 @@ function renderLineChart(el,data){
   const area=`M ${pts[0][0]},${h-p.b} ${pts.map(p=>'L '+p.join(',')).join(' ')} L ${pts.at(-1)[0]},${h-p.b} Z`;
   const grid=[0,.25,.5,.75,1].map(t=>{const yy=y(max*t);return `<line class="grid-line" x1="${p.l}" x2="${w-p.r}" y1="${yy}" y2="${yy}"/><text class="axis-label" x="${p.l-12}" y="${yy+4}" text-anchor="end">${compact(max*t)}</text>`}).join('');
   const labels=data.map((d,i)=>`<text class="axis-label" x="${x(i)}" y="${h-20}" text-anchor="middle">${escapeHtml(d.label)}</text>`).join('');
-  const points=data.map((d,i)=>`<circle class="point" cx="${x(i)}" cy="${y(d.value)}" r="6" data-tip="${escapeHtml(d.label)} · ${escapeHtml(MONEY.format(d.value))}"/>`).join('');
-  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><defs><linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#129ed8" stop-opacity=".28"/><stop offset="1" stop-color="#129ed8" stop-opacity="0"/></linearGradient></defs>${grid}<path class="area-path" d="${area}"/><path class="line-path" d="${line}"/>${points}${labels}</svg>`; bindTips(el);
+  const points=data.map((d,i)=>`<circle class="point" cx="${x(i)}" cy="${y(d.value)}" r="7" data-month="${escapeHtml(d.label)}" data-tip="${escapeHtml(d.label)} · ${escapeHtml(MONEY.format(d.value))}"/>`).join('');
+  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><defs><linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#129ed8" stop-opacity=".28"/><stop offset="1" stop-color="#129ed8" stop-opacity="0"/></linearGradient></defs>${grid}<path class="area-path" d="${area}"/><path class="line-path" d="${line}"/>${points}${labels}</svg>`; bindTips(el); bindMonthFilter(el);
 }
 function renderBarChart(el,data){
   if(!data.length){emptyChart(el);return} const w=520,h=270,p={l:12,r:20,t:12,b:74}; const max=Math.max(...data.map(d=>d.value),1); const slot=(w-p.l-p.r)/data.length; const bw=Math.max(20,slot*.56);
   el.innerHTML=`<svg viewBox="0 0 ${w} ${h}">${data.map((d,i)=>{const bh=(d.value/max)*(h-p.t-p.b);const xx=p.l+i*slot+(slot-bw)/2,yy=h-p.b-bh;return `<rect class="bar" x="${xx}" y="${yy}" width="${bw}" height="${bh}" data-tip="${escapeHtml(d.label)} · ${escapeHtml(MONEY.format(d.value))}"/><text class="axis-label" x="${xx+bw/2}" y="${h-p.b+16}" text-anchor="end" transform="rotate(-38 ${xx+bw/2} ${h-p.b+16})">${escapeHtml(shorten(d.label,18))}</text>`}).join('')}</svg>`; bindTips(el);
+}
+function renderColumnChart(el,data,filterable=false){
+  if(!data.length){emptyChart(el);return} const w=900,h=520,p={l:84,r:28,t:30,b:58};
+  const max=Math.max(...data.map(d=>d.value),1); const slot=(w-p.l-p.r)/Math.max(data.length,1); const bw=Math.max(34,slot*.58);
+  const y=v=>h-p.b-(v/max)*(h-p.t-p.b);
+  const grid=[0,.25,.5,.75,1].map(t=>{const yy=y(max*t);return `<line class="grid-line" x1="${p.l}" x2="${w-p.r}" y1="${yy}" y2="${yy}"/><text class="axis-label" x="${p.l-12}" y="${yy+4}" text-anchor="end">${compact(max*t)}</text>`}).join('');
+  const bars=data.map((d,i)=>{const bh=(d.value/max)*(h-p.t-p.b); const xx=p.l+i*slot+(slot-bw)/2, yy=h-p.b-bh; return `<rect class="bar monthly-bar" x="${xx}" y="${yy}" width="${bw}" height="${bh}" data-month="${escapeHtml(d.label)}" data-tip="${escapeHtml(d.label)} · ${escapeHtml(MONEY.format(d.value))}"/><text class="axis-label" x="${xx+bw/2}" y="${h-20}" text-anchor="middle">${escapeHtml(d.label)}</text>`}).join('');
+  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${grid}${bars}</svg>`; bindTips(el); if(filterable) bindMonthFilter(el);
 }
 function renderDonut(el,data){
   if(!data.length){emptyChart(el);return} const total=data.reduce((a,d)=>a+d.value,0); const colors=['#13843d','#f4c843','#129ed8','#a73535','#7b67b9']; let cursor=0;
@@ -153,15 +160,25 @@ function bindTips(root){
 }
 function showTip(e,text){const tip=$('#tooltip');tip.textContent=text;tip.style.display='block';const x=e.clientX??innerWidth/2,y=e.clientY??innerHeight/2;tip.style.left=Math.min(x+14,innerWidth-tip.offsetWidth-12)+'px';tip.style.top=Math.min(y+14,innerHeight-tip.offsetHeight-12)+'px'}
 function hideTip(){$('#tooltip').style.display='none'}
+function bindMonthFilter(root){
+  $$('[data-month]',root).forEach(node=>{
+    node.style.cursor='pointer';
+    node.setAttribute('tabindex','0');
+    node.setAttribute('role','button');
+    node.addEventListener('click',()=>{ $('#monthFilter').value=node.dataset.month || ''; applyFilters(); });
+    node.addEventListener('keydown',e=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); node.click(); } });
+  });
+}
 
 function renderTable(){
   $('#resultCount').textContent=`${NUM.format(state.filtered.length)} registro(s) encontrado(s)`;
   $('#dataTable').innerHTML=state.filtered.slice(0,250).map(r=>`<tr>
     <td>${escapeHtml(r.month)}</td><td>${escapeHtml(r.entity)}</td><td>${escapeHtml(r.agency)}</td><td>${escapeHtml(r.category)}</td>
     <td><span class="status-pill ${statusClass(r.status)}">${escapeHtml(r.status)}</span></td>
-    <td class="optional-column">${escapeHtml(r.debtType || '—')}</td><td class="optional-column">${escapeHtml(r.owner || '—')}</td><td class="optional-column">${escapeHtml(r.process || '—')}</td>
-    <td>${MONEY.format(Number(r.revenue)||0)}</td><td>${MONEY.format(Number(r.debt)||0)}</td></tr>`).join('') || '<tr><td colspan="10">Nenhum registro encontrado.</td></tr>';
+    <td class="optional-column">${escapeHtml(r.process || '—')}</td>
+    <td>${MONEY.format(Number(r.revenue)||0)}</td></tr>`).join('') || '<tr><td colspan="7">Nenhum registro encontrado.</td></tr>';
 }
+
 function statusClass(status=''){const s=status.toLowerCase();return s.includes('atras')?'overdue':s.includes('acomp')||s.includes('pend')?'pending':''}
 
 function initStory(){
@@ -183,7 +200,9 @@ function initStory(){
 function initEvents(){
   $('#filterForm').addEventListener('input',applyFilters); $('#filterForm').addEventListener('change',applyFilters);
   $('#resetFilters').addEventListener('click',()=>{$('#filterForm').reset();applyFilters()});
-  $('#toggleColumns').addEventListener('click',e=>{const on=$('.table-wrap').classList.toggle('show-optional');e.currentTarget.textContent=on?'Ocultar colunas extras':'Exibir mais colunas'});
+  $('#toggleColumns').addEventListener('click',e=>{const on=$('.table-wrap').classList.toggle('show-optional');e.currentTarget.textContent=on?'Ocultar processo':'Exibir processo'});
+  $$('.chart-toggle[data-monthly-mode]').forEach(btn=>btn.addEventListener('click',()=>{ state.monthlyMode = btn.dataset.monthlyMode; $$('.chart-toggle[data-monthly-mode]').forEach(b=>b.classList.toggle('is-active', b===btn)); renderCharts(); }));
+  $('#clearMonthFocus')?.addEventListener('click',()=>{ $('#monthFilter').value=''; applyFilters(); });
   const dialog=$('#adminDialog'); $$('[data-open-admin]').forEach(btn=>btn.addEventListener('click',()=>dialog.showModal()));
   dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close()});
 }

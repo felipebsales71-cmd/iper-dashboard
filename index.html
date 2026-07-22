@@ -68,7 +68,7 @@
             <div class="mini-kpis">
               <div><span>Arrecadação</span><strong data-kpi="revenue">—</strong></div>
               <div><span>Entes</span><strong data-kpi="entities">—</strong></div>
-              <div><span>Crescimento</span><strong data-kpi="growth">—</strong></div>
+              <div><span>Competências</span><strong data-kpi="competences">—</strong></div>
             </div>
           </article>
 
@@ -125,23 +125,19 @@
           <label>Fundo<select id="fundFilter"><option value="">Todos</option></select></label>
           <label>Categoria<select id="categoryFilter"><option value="">Todas</option></select></label>
           <label>Situação<select id="statusFilter"><option value="">Todas</option></select></label>
-          <label>Tipo de débito<select id="debtTypeFilter"><option value="">Todos</option></select></label>
-          <label>Responsável<select id="ownerFilter"><option value="">Todos</option></select></label>
-          <label>Data inicial<input id="startDate" type="date" /></label>
+                    <label>Data inicial<input id="startDate" type="date" /></label>
           <label>Data final<input id="endDate" type="date" /></label>
         </form>
 
         <section class="kpi-grid" aria-label="Indicadores principais">
           <article class="kpi-card"><span>Arrecadação total</span><strong id="revenueKpi">—</strong><small id="revenueDelta">—</small></article>
           <article class="kpi-card"><span>Quantidade de órgãos</span><strong id="entitiesKpi">—</strong><small>órgãos no recorte selecionado</small></article>
-          <article class="kpi-card"><span>Crescimento</span><strong id="growthKpi">—</strong><small>comparação com o período anterior</small></article>
-          <article class="kpi-card"><span>Total de débitos</span><strong id="debtKpi">—</strong><small id="debtCount">—</small></article>
-          <article class="kpi-card"><span>Processos acompanhados</span><strong id="processKpi">—</strong><small>registros com processo vinculado</small></article>
+          <article class="kpi-card"><span>Competências analisadas</span><strong id="competencesKpi">—</strong><small>meses com dados no período</small></article>
         </section>
 
         <section class="chart-grid">
           <article class="panel panel-wide">
-            <header><div><h3>Evolução mensal</h3><p>Arrecadação por competência</p></div><span class="legend-dot">Arrecadação</span></header>
+            <header><div><h3>Evolução mensal</h3><p>Passe o mouse para ver os valores e clique em um mês para filtrar a competência.</p></div><div class="chart-controls"><button class="chart-toggle is-active" type="button" data-monthly-mode="line">Linha</button><button class="chart-toggle" type="button" data-monthly-mode="bar">Barras</button><button class="chart-toggle ghost" type="button" id="clearMonthFocus">Mostrar todos</button></div></header>
             <div class="chart-box" id="monthlyChart" role="img" aria-label="Gráfico de evolução mensal"></div>
           </article>
           <article class="panel">
@@ -149,7 +145,7 @@
             <div class="chart-box" id="agencyChart" role="img" aria-label="Gráfico de total por órgão"></div>
           </article>
           <article class="panel">
-            <header><div><h3>Situação dos débitos</h3><p>Distribuição dos registros</p></div></header>
+            <header><div><h3>Distribuição por fundo</h3><p>Participação da arrecadação por fundo</p></div></header>
             <div class="chart-box" id="statusChart" role="img" aria-label="Gráfico de situação dos débitos"></div>
           </article>
         </section>
@@ -163,8 +159,7 @@
             <table>
               <thead><tr>
                 <th>Competência</th><th>Ente</th><th>Órgão</th><th>Categoria</th><th>Situação</th>
-                <th class="optional-column">Tipo de débito</th><th class="optional-column">Responsável</th><th class="optional-column">Processo</th>
-                <th>Arrecadação</th><th>Débito</th>
+                <th class="optional-column">Processo</th><th>Arrecadação</th>
               </tr></thead>
               <tbody id="dataTable"></tbody>
             </table>
