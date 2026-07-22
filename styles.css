@@ -820,7 +820,13 @@ select {
   display: grid;
   gap: 16px;
   overflow: auto;
+  padding-bottom: 10px;
 }
+
+.fund-scroll {
+  overflow: auto;
+}
+
 .fund-total-card {
   display: flex;
   align-items: end;

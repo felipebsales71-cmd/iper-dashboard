@@ -43,7 +43,7 @@ async function loadData(){
   status.classList.toggle('is-live', live);
   status.classList.toggle('is-fallback', !live);
   status.textContent = live
-    ? `● Conectado ao Google Planilhas · atualizado em ${when} · cache desativado`
+    ? `● Conectado ao Google Planilhas · atualizado em ${when}`
     : `● Modo de contingência local · referência: ${when}`;
   if(refreshButton){ refreshButton.disabled = false; refreshButton.textContent = 'Atualizar dados'; }
 }
