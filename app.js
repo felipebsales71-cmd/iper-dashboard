@@ -1,5 +1,5 @@
 const state = { allRecords: [], filtered: [], meta: null, scene: 0 };
-const BRL = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:2});
+const MONEY = new Intl.NumberFormat('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:2});
 const NUM = new Intl.NumberFormat('pt-BR');
 const PCT = new Intl.NumberFormat('pt-BR',{style:'percent',minimumFractionDigits:1,maximumFractionDigits:1});
 const monthOrder = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
@@ -93,10 +93,10 @@ function renderKpis(){
   const monthly = aggregate(state.filtered,'month','revenue').sort((a,b)=>monthKey(a.label)-monthKey(b.label));
   const previous = monthly.at(-2)?.value || 0; const latest = monthly.at(-1)?.value || 0;
   const growth = previous ? (latest-previous)/previous : 0;
-  $('#revenueKpi').textContent=BRL.format(revenue); $('#entitiesKpi').textContent=NUM.format(entities);
+  $('#revenueKpi').textContent=MONEY.format(revenue); $('#entitiesKpi').textContent=NUM.format(entities);
   $('#growthKpi').textContent=PCT.format(growth);
   const caps=state.meta?.capabilities||{};
-  if(caps.debts===false){$('#debtKpi').textContent='Não disponível';$('#debtCount').textContent='A base atual não possui coluna de débitos';}else{$('#debtKpi').textContent=BRL.format(debt);$('#debtCount').textContent=`${state.filtered.filter(r=>Number(r.debt)>0).length} registros com débito`;}
+  if(caps.debts===false){$('#debtKpi').textContent='Não disponível';$('#debtCount').textContent='A base atual não possui coluna de débitos';}else{$('#debtKpi').textContent=MONEY.format(debt);$('#debtCount').textContent=`${state.filtered.filter(r=>Number(r.debt)>0).length} registros com débito`;}
   if(caps.processes===false){$('#processKpi').textContent='Não disponível';}else{$('#processKpi').textContent=NUM.format(processes);}
   $('#revenueDelta').textContent = monthly.length>1 ? `${growth>=0?'▲':'▼'} ${PCT.format(Math.abs(growth))} na última competência` : 'Sem comparação disponível';
 }
@@ -106,7 +106,7 @@ function updateStoryKpis(){
   const monthly=aggregate(state.allRecords,'month','revenue').sort((a,b)=>monthKey(a.label)-monthKey(b.label));
   const prev=monthly.at(-2)?.value||0, last=monthly.at(-1)?.value||0, growth=prev?(last-prev)/prev:0;
   $$('[data-kpi="records"]').forEach(el=>el.textContent=NUM.format(state.allRecords.length));
-  $$('[data-kpi="revenue"]').forEach(el=>el.textContent=BRL.format(revenue));
+  $$('[data-kpi="revenue"]').forEach(el=>el.textContent=MONEY.format(revenue));
   $$('[data-kpi="entities"]').forEach(el=>el.textContent=NUM.format(entities));
   $$('[data-kpi="growth"]').forEach(el=>el.textContent=PCT.format(growth));
 }
@@ -134,12 +134,12 @@ function renderLineChart(el,data){
   const area=`M ${pts[0][0]},${h-p.b} ${pts.map(p=>'L '+p.join(',')).join(' ')} L ${pts.at(-1)[0]},${h-p.b} Z`;
   const grid=[0,.25,.5,.75,1].map(t=>{const yy=y(max*t);return `<line class="grid-line" x1="${p.l}" x2="${w-p.r}" y1="${yy}" y2="${yy}"/><text class="axis-label" x="${p.l-12}" y="${yy+4}" text-anchor="end">${compact(max*t)}</text>`}).join('');
   const labels=data.map((d,i)=>`<text class="axis-label" x="${x(i)}" y="${h-20}" text-anchor="middle">${escapeHtml(d.label)}</text>`).join('');
-  const points=data.map((d,i)=>`<circle class="point" cx="${x(i)}" cy="${y(d.value)}" r="6" data-tip="${escapeHtml(d.label)} · ${escapeHtml(BRL.format(d.value))}"/>`).join('');
+  const points=data.map((d,i)=>`<circle class="point" cx="${x(i)}" cy="${y(d.value)}" r="6" data-tip="${escapeHtml(d.label)} · ${escapeHtml(MONEY.format(d.value))}"/>`).join('');
   el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><defs><linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#129ed8" stop-opacity=".28"/><stop offset="1" stop-color="#129ed8" stop-opacity="0"/></linearGradient></defs>${grid}<path class="area-path" d="${area}"/><path class="line-path" d="${line}"/>${points}${labels}</svg>`; bindTips(el);
 }
 function renderBarChart(el,data){
   if(!data.length){emptyChart(el);return} const w=520,h=270,p={l:12,r:20,t:12,b:74}; const max=Math.max(...data.map(d=>d.value),1); const slot=(w-p.l-p.r)/data.length; const bw=Math.max(20,slot*.56);
-  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}">${data.map((d,i)=>{const bh=(d.value/max)*(h-p.t-p.b);const xx=p.l+i*slot+(slot-bw)/2,yy=h-p.b-bh;return `<rect class="bar" x="${xx}" y="${yy}" width="${bw}" height="${bh}" data-tip="${escapeHtml(d.label)} · ${escapeHtml(BRL.format(d.value))}"/><text class="axis-label" x="${xx+bw/2}" y="${h-p.b+16}" text-anchor="end" transform="rotate(-38 ${xx+bw/2} ${h-p.b+16})">${escapeHtml(shorten(d.label,18))}</text>`}).join('')}</svg>`; bindTips(el);
+  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}">${data.map((d,i)=>{const bh=(d.value/max)*(h-p.t-p.b);const xx=p.l+i*slot+(slot-bw)/2,yy=h-p.b-bh;return `<rect class="bar" x="${xx}" y="${yy}" width="${bw}" height="${bh}" data-tip="${escapeHtml(d.label)} · ${escapeHtml(MONEY.format(d.value))}"/><text class="axis-label" x="${xx+bw/2}" y="${h-p.b+16}" text-anchor="end" transform="rotate(-38 ${xx+bw/2} ${h-p.b+16})">${escapeHtml(shorten(d.label,18))}</text>`}).join('')}</svg>`; bindTips(el);
 }
 function renderDonut(el,data){
   if(!data.length){emptyChart(el);return} const total=data.reduce((a,d)=>a+d.value,0); const colors=['#13843d','#f4c843','#129ed8','#a73535','#7b67b9']; let cursor=0;
@@ -160,7 +160,7 @@ function renderTable(){
     <td>${escapeHtml(r.month)}</td><td>${escapeHtml(r.entity)}</td><td>${escapeHtml(r.agency)}</td><td>${escapeHtml(r.category)}</td>
     <td><span class="status-pill ${statusClass(r.status)}">${escapeHtml(r.status)}</span></td>
     <td class="optional-column">${escapeHtml(r.debtType || '—')}</td><td class="optional-column">${escapeHtml(r.owner || '—')}</td><td class="optional-column">${escapeHtml(r.process || '—')}</td>
-    <td>${BRL.format(Number(r.revenue)||0)}</td><td>${BRL.format(Number(r.debt)||0)}</td></tr>`).join('') || '<tr><td colspan="10">Nenhum registro encontrado.</td></tr>';
+    <td>${MONEY.format(Number(r.revenue)||0)}</td><td>${MONEY.format(Number(r.debt)||0)}</td></tr>`).join('') || '<tr><td colspan="10">Nenhum registro encontrado.</td></tr>';
 }
 function statusClass(status=''){const s=status.toLowerCase();return s.includes('atras')?'overdue':s.includes('acomp')||s.includes('pend')?'pending':''}
 

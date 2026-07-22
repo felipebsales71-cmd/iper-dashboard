@@ -5,7 +5,7 @@
  * Ela pode ser substituída no Cloudflare pela variável GOOGLE_SHEETS_ENDPOINT.
  */
 const DEFAULT_GOOGLE_SHEETS_ENDPOINT = "https://script.google.com/macros/s/AKfycbxpZpM5qYM7fLjqROHnCEcEhDa1jMS3IlsK3gi2S7xkwzydWOzA7CwzGtr6oYRFx0LA/exec";
-const DEFAULT_CACHE_SECONDS = 300;
+const DEFAULT_CACHE_SECONDS = 15;
 
 function jsonError(message, status, details) {
   return Response.json(
@@ -25,7 +25,7 @@ export async function onRequestGet(context) {
   const endpoint = context.env.GOOGLE_SHEETS_ENDPOINT || DEFAULT_GOOGLE_SHEETS_ENDPOINT;
   const requestedCache = Number(context.env.DASHBOARD_CACHE_SECONDS || DEFAULT_CACHE_SECONDS);
   const cacheSeconds = Number.isFinite(requestedCache)
-    ? Math.max(60, Math.min(requestedCache, 3600))
+    ? Math.max(5, Math.min(requestedCache, 3600))
     : DEFAULT_CACHE_SECONDS;
 
   const requestUrl = new URL(context.request.url);
