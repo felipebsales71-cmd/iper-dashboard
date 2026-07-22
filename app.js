@@ -119,8 +119,8 @@ function countBy(rows,key){
 function renderCharts(){
   const monthlyData = aggregate(state.filtered,'month','revenue').sort((a,b)=>monthKey(a.label)-monthKey(b.label));
   renderMonthlyChart($('#monthlyChart'), monthlyData, $('#monthFilter').value || '');
-  renderBarChart($('#agencyChart'),aggregate(state.filtered,'agency','revenue').sort((a,b)=>b.value-a.value).slice(0,7));
-  renderDonut($('#statusChart'),aggregate(state.filtered,'fund','revenue').sort((a,b)=>b.value-a.value));
+  renderAgencyChart($('#agencyChart'),aggregate(state.filtered,'agency','revenue').sort((a,b)=>b.value-a.value));
+  renderFundChart($('#statusChart'),aggregate(state.filtered,'fund','revenue').sort((a,b)=>b.value-a.value));
 }
 
 
@@ -143,10 +143,27 @@ function renderMonthlyChart(el,data,activeMonth=''){
   bindTips(el); bindMonthFilter(el);
 }
 
-function renderBarChart(el,data){
-  if(!data.length){emptyChart(el);return} const w=520,h=270,p={l:12,r:20,t:12,b:74}; const max=Math.max(...data.map(d=>d.value),1); const slot=(w-p.l-p.r)/data.length; const bw=Math.max(20,slot*.56);
-  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}">${data.map((d,i)=>{const bh=(d.value/max)*(h-p.t-p.b);const xx=p.l+i*slot+(slot-bw)/2,yy=h-p.b-bh;return `<rect class="bar" x="${xx}" y="${yy}" width="${bw}" height="${bh}" data-tip="${escapeHtml(d.label)} · ${escapeHtml(MONEY.format(d.value))}"/><text class="axis-label" x="${xx+bw/2}" y="${h-p.b+16}" text-anchor="end" transform="rotate(-38 ${xx+bw/2} ${h-p.b+16})">${escapeHtml(shorten(d.label,18))}</text>`}).join('')}</svg>`; bindTips(el);
+function renderAgencyChart(el,data){
+  if(!data.length){emptyChart(el);return}
+  const visible = data; // mostra todos os órgãos
+  const rowH = 38;
+  const w = 760;
+  const h = Math.max(280, 36 + visible.length * rowH);
+  const p = {l: 150, r: 26, t: 12, b: 12};
+  const max = Math.max(...visible.map(d=>d.value),1);
+  const barArea = w - p.l - p.r;
+  const rows = visible.map((d,i)=>{
+    const y = p.t + i*rowH;
+    const bw = Math.max(4, (d.value/max)*barArea);
+    const label = escapeHtml(d.label);
+    const shortValue = escapeHtml(compact(d.value));
+    const fullValue = escapeHtml(MONEY.format(d.value));
+    return `<g><text class="agency-label" x="${p.l-12}" y="${y+20}" text-anchor="end">${label}</text><rect class="agency-track" x="${p.l}" y="${y+6}" width="${barArea}" height="20" rx="10"></rect><rect class="agency-bar" x="${p.l}" y="${y+6}" width="${bw}" height="20" rx="10" data-tip="${label} · ${fullValue}"></rect><text class="agency-value" x="${Math.min(p.l+bw+10,w-p.r)}" y="${y+20}">${shortValue}</text></g>`;
+  }).join('');
+  el.innerHTML = `<div class="agency-scroll"><svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${rows}</svg></div>`;
+  bindTips(el);
 }
+
 function renderColumnChart(el,data,filterable=false){
   if(!data.length){emptyChart(el);return} const w=900,h=520,p={l:84,r:28,t:30,b:58};
   const max=Math.max(...data.map(d=>d.value),1); const slot=(w-p.l-p.r)/Math.max(data.length,1); const bw=Math.max(34,slot*.58);
@@ -155,14 +172,24 @@ function renderColumnChart(el,data,filterable=false){
   const bars=data.map((d,i)=>{const bh=(d.value/max)*(h-p.t-p.b); const xx=p.l+i*slot+(slot-bw)/2, yy=h-p.b-bh; return `<rect class="bar monthly-bar" x="${xx}" y="${yy}" width="${bw}" height="${bh}" data-month="${escapeHtml(d.label)}" data-tip="${escapeHtml(d.label)} · ${escapeHtml(MONEY.format(d.value))}"/><text class="axis-label" x="${xx+bw/2}" y="${h-20}" text-anchor="middle">${escapeHtml(d.label)}</text>`}).join('');
   el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${grid}${bars}</svg>`; bindTips(el); if(filterable) bindMonthFilter(el);
 }
-function renderDonut(el,data){
+function renderFundChart(el,data){
   if(!data.length){emptyChart(el);return}
   const total=data.reduce((a,d)=>a+d.value,0);
   const colors=['#13843d','#f4c843','#129ed8','#1b4f82','#7b67b9'];
-  let cursor=0;
-  const arcs=data.map((d,i)=>{const start=cursor/total*360; cursor+=d.value; const end=cursor/total*360; return `${colors[i%colors.length]} ${start}deg ${end}deg`}).join(',');
-  el.innerHTML=`<div class="fund-layout"><div class="fund-donut-wrap"><div class="fund-donut" style="background:conic-gradient(${arcs})"><div class="fund-donut-center"><strong>${escapeHtml(compact(total))}</strong><span>total arrecadado</span></div></div></div><div class="fund-list">${data.map((d,i)=>`<div class="fund-item"><i style="background:${colors[i%colors.length]}"></i><span>${escapeHtml(d.label)}</span><strong>${escapeHtml(MONEY.format(d.value))}</strong></div>`).join('')}</div></div>`;
+  let offset = 0;
+  const segments = data.map((d,i)=>{
+    const pct = total ? (d.value/total)*100 : 0;
+    const seg = `<span style="width:${pct}%;background:${colors[i%colors.length]}"></span>`;
+    offset += pct;
+    return seg;
+  }).join('');
+  const items = data.map((d,i)=>{
+    const pct = total ? (d.value/total) : 0;
+    return `<div class="fund-row-card"><div class="fund-row-left"><i style="background:${colors[i%colors.length]}"></i><div><strong>${escapeHtml(d.label)}</strong><small>${PCT.format(pct)} do total</small></div></div><div class="fund-row-right">${escapeHtml(MONEY.format(d.value))}</div></div>`;
+  }).join('');
+  el.innerHTML = `<div class="fund-clean"><div class="fund-total-card"><span>Total arrecadado</span><strong>${escapeHtml(MONEY.format(total))}</strong></div><div class="fund-segment-bar">${segments}</div><div class="fund-rows">${items}</div></div>`;
 }
+
 
 function compact(v){return new Intl.NumberFormat('pt-BR',{notation:'compact',maximumFractionDigits:1}).format(v)}
 function shorten(s,n){return String(s).length>n?String(s).slice(0,n-1)+'…':s}
