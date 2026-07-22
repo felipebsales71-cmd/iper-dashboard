@@ -118,24 +118,31 @@ function countBy(rows,key){
 
 function renderCharts(){
   const monthlyData = aggregate(state.filtered,'month','revenue').sort((a,b)=>monthKey(a.label)-monthKey(b.label));
-  if(state.monthlyMode === 'bar') renderColumnChart($('#monthlyChart'), monthlyData, true);
-  else renderLineChart($('#monthlyChart'), monthlyData);
+  renderMonthlyChart($('#monthlyChart'), monthlyData, $('#monthFilter').value || '');
   renderBarChart($('#agencyChart'),aggregate(state.filtered,'agency','revenue').sort((a,b)=>b.value-a.value).slice(0,7));
   renderDonut($('#statusChart'),aggregate(state.filtered,'fund','revenue').sort((a,b)=>b.value-a.value));
 }
 
 
+
 function emptyChart(el){ el.innerHTML='<div class="chart-empty">Nenhum dado encontrado para os filtros selecionados.</div>'; }
-function renderLineChart(el,data){
-  if(!data.length){emptyChart(el);return} const w=900,h=520,p={l:84,r:28,t:30,b:58};
-  const max=Math.max(...data.map(d=>d.value),1); const x=i=>p.l+i*((w-p.l-p.r)/Math.max(data.length-1,1)); const y=v=>h-p.b-(v/max)*(h-p.t-p.b);
-  const pts=data.map((d,i)=>[x(i),y(d.value)]); const line=pts.map((p,i)=>(i?'L':'M')+p.join(',')).join(' ');
-  const area=`M ${pts[0][0]},${h-p.b} ${pts.map(p=>'L '+p.join(',')).join(' ')} L ${pts.at(-1)[0]},${h-p.b} Z`;
+function renderMonthlyChart(el,data,activeMonth=''){
+  if(!data.length){emptyChart(el);return}
+  const w=900,h=460,p={l:76,r:22,t:28,b:78};
+  const max=Math.max(...data.map(d=>d.value),1);
+  const slot=(w-p.l-p.r)/Math.max(data.length,1);
+  const bw=Math.max(40,slot*.55);
+  const y=v=>h-p.b-(v/max)*(h-p.t-p.b);
   const grid=[0,.25,.5,.75,1].map(t=>{const yy=y(max*t);return `<line class="grid-line" x1="${p.l}" x2="${w-p.r}" y1="${yy}" y2="${yy}"/><text class="axis-label" x="${p.l-12}" y="${yy+4}" text-anchor="end">${compact(max*t)}</text>`}).join('');
-  const labels=data.map((d,i)=>`<text class="axis-label" x="${x(i)}" y="${h-20}" text-anchor="middle">${escapeHtml(d.label)}</text>`).join('');
-  const points=data.map((d,i)=>`<circle class="point" cx="${x(i)}" cy="${y(d.value)}" r="7" data-month="${escapeHtml(d.label)}" data-tip="${escapeHtml(d.label)} · ${escapeHtml(MONEY.format(d.value))}"/>`).join('');
-  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><defs><linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#129ed8" stop-opacity=".28"/><stop offset="1" stop-color="#129ed8" stop-opacity="0"/></linearGradient></defs>${grid}<path class="area-path" d="${area}"/><path class="line-path" d="${line}"/>${points}${labels}</svg>`; bindTips(el); bindMonthFilter(el);
+  const bars=data.map((d,i)=>{
+    const bh=(d.value/max)*(h-p.t-p.b); const xx=p.l+i*slot+(slot-bw)/2, yy=h-p.b-bh;
+    const active = activeMonth && activeMonth===d.label;
+    return `<g class="month-group ${active?'is-active':''}"><rect class="bar monthly-bar ${active?'is-active':''}" x="${xx}" y="${yy}" width="${bw}" height="${bh}" rx="16" ry="16" data-month="${escapeHtml(d.label)}" data-tip="${escapeHtml(d.label)} · ${escapeHtml(MONEY.format(d.value))}"/><text class="value-label" x="${xx+bw/2}" y="${yy-10}" text-anchor="middle">${escapeHtml(compact(d.value))}</text><text class="axis-label month-label" x="${xx+bw/2}" y="${h-22}" text-anchor="middle">${escapeHtml(d.label)}</text></g>`;
+  }).join('');
+  el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${grid}${bars}</svg>`;
+  bindTips(el); bindMonthFilter(el);
 }
+
 function renderBarChart(el,data){
   if(!data.length){emptyChart(el);return} const w=520,h=270,p={l:12,r:20,t:12,b:74}; const max=Math.max(...data.map(d=>d.value),1); const slot=(w-p.l-p.r)/data.length; const bw=Math.max(20,slot*.56);
   el.innerHTML=`<svg viewBox="0 0 ${w} ${h}">${data.map((d,i)=>{const bh=(d.value/max)*(h-p.t-p.b);const xx=p.l+i*slot+(slot-bw)/2,yy=h-p.b-bh;return `<rect class="bar" x="${xx}" y="${yy}" width="${bw}" height="${bh}" data-tip="${escapeHtml(d.label)} · ${escapeHtml(MONEY.format(d.value))}"/><text class="axis-label" x="${xx+bw/2}" y="${h-p.b+16}" text-anchor="end" transform="rotate(-38 ${xx+bw/2} ${h-p.b+16})">${escapeHtml(shorten(d.label,18))}</text>`}).join('')}</svg>`; bindTips(el);
@@ -149,10 +156,14 @@ function renderColumnChart(el,data,filterable=false){
   el.innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${grid}${bars}</svg>`; bindTips(el); if(filterable) bindMonthFilter(el);
 }
 function renderDonut(el,data){
-  if(!data.length){emptyChart(el);return} const total=data.reduce((a,d)=>a+d.value,0); const colors=['#13843d','#f4c843','#129ed8','#a73535','#7b67b9']; let cursor=0;
+  if(!data.length){emptyChart(el);return}
+  const total=data.reduce((a,d)=>a+d.value,0);
+  const colors=['#13843d','#f4c843','#129ed8','#1b4f82','#7b67b9'];
+  let cursor=0;
   const arcs=data.map((d,i)=>{const start=cursor/total*360; cursor+=d.value; const end=cursor/total*360; return `${colors[i%colors.length]} ${start}deg ${end}deg`}).join(',');
-  el.innerHTML=`<div style="display:grid;grid-template-columns:150px 1fr;gap:22px;align-items:center;height:100%"><div style="width:150px;height:150px;border-radius:50%;background:conic-gradient(${arcs});position:relative"><div style="position:absolute;inset:28px;border-radius:50%;background:white;display:grid;place-items:center;text-align:center"><strong style="font-size:1.45rem">${NUM.format(total)}</strong><span style="font-size:.7rem;color:#607184">registros</span></div></div><div>${data.map((d,i)=>`<div style="display:grid;grid-template-columns:10px 1fr auto;gap:8px;align-items:center;margin:10px 0;font-size:.78rem"><i style="width:10px;height:10px;border-radius:50%;background:${colors[i%colors.length]}"></i><span>${escapeHtml(d.label)}</span><strong>${NUM.format(d.value)}</strong></div>`).join('')}</div></div>`;
+  el.innerHTML=`<div class="fund-layout"><div class="fund-donut-wrap"><div class="fund-donut" style="background:conic-gradient(${arcs})"><div class="fund-donut-center"><strong>${escapeHtml(compact(total))}</strong><span>total arrecadado</span></div></div></div><div class="fund-list">${data.map((d,i)=>`<div class="fund-item"><i style="background:${colors[i%colors.length]}"></i><span>${escapeHtml(d.label)}</span><strong>${escapeHtml(MONEY.format(d.value))}</strong></div>`).join('')}</div></div>`;
 }
+
 function compact(v){return new Intl.NumberFormat('pt-BR',{notation:'compact',maximumFractionDigits:1}).format(v)}
 function shorten(s,n){return String(s).length>n?String(s).slice(0,n-1)+'…':s}
 function bindTips(root){
@@ -201,7 +212,6 @@ function initEvents(){
   $('#filterForm').addEventListener('input',applyFilters); $('#filterForm').addEventListener('change',applyFilters);
   $('#resetFilters').addEventListener('click',()=>{$('#filterForm').reset();applyFilters()});
   $('#toggleColumns').addEventListener('click',e=>{const on=$('.table-wrap').classList.toggle('show-optional');e.currentTarget.textContent=on?'Ocultar processo':'Exibir processo'});
-  $$('.chart-toggle[data-monthly-mode]').forEach(btn=>btn.addEventListener('click',()=>{ state.monthlyMode = btn.dataset.monthlyMode; $$('.chart-toggle[data-monthly-mode]').forEach(b=>b.classList.toggle('is-active', b===btn)); renderCharts(); }));
   $('#clearMonthFocus')?.addEventListener('click',()=>{ $('#monthFilter').value=''; applyFilters(); });
   const dialog=$('#adminDialog'); $$('[data-open-admin]').forEach(btn=>btn.addEventListener('click',()=>dialog.showModal()));
   dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close()});
