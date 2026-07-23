@@ -8,6 +8,10 @@
   Cache-Control: public, max-age=31536000, immutable
 
 /api/dashboard
-  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
-  Pragma: no-cache
-  Expires: 0
+  Cache-Control: public, max-age=0, must-revalidate
+
+/api/dashboard-version
+  Cache-Control: no-store
+
+/api/dashboard-refresh
+  Cache-Control: no-store

@@ -1,4 +1,4 @@
-const state = { allRecords: [], filtered: [], meta: null, scene: 0, monthlyMode: 'line' };
+const state = { allRecords: [], filtered: [], meta: null, scene: 0, monthlyMode: 'line', version: null, versionTimer: null };
 const MONEY = new Intl.NumberFormat('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:2});
 const NUM = new Intl.NumberFormat('pt-BR');
 const PCT = new Intl.NumberFormat('pt-BR',{style:'percent',minimumFractionDigits:1,maximumFractionDigits:1});
@@ -10,13 +10,23 @@ const sum = (rows, key) => rows.reduce((a,r)=>a+(Number(r[key])||0),0);
 const uniq = (rows,key) => [...new Set(rows.map(r=>r[key]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),'pt-BR'));
 const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[c]));
 
-async function loadData(){
+async function loadData(options={}){
+  const { silent=false, preserveFilters=true } = options;
   const refreshButton = $('#refreshData');
-  if(refreshButton){ refreshButton.disabled = true; refreshButton.textContent = 'Atualizando…'; }
+  const savedFilters = preserveFilters ? captureFilterState() : null;
+
+  if(refreshButton && !silent){
+    refreshButton.disabled = true;
+    refreshButton.textContent = 'Verificando…';
+  }
+
   let payload;
   let live = false;
   try {
-    const response = await fetch(`/api/dashboard?_fresh=${Date.now()}`,{headers:{Accept:'application/json','Cache-Control':'no-cache'},cache:'no-store'});
+    const response = await fetch('/api/dashboard',{
+      headers:{ Accept:'application/json' },
+      cache:'no-cache'
+    });
     if(!response.ok){
       const diagnostic = await response.json().catch(()=>({}));
       throw new Error(diagnostic.details || diagnostic.error || `HTTP ${response.status}`);
@@ -24,17 +34,22 @@ async function loadData(){
     payload = await response.json();
     live = payload?.meta?.connection === 'live' || payload?.meta?.isDemo === false;
   } catch (error) {
-    console.warn('Fonte ao vivo indisponível; usando contingência local.', error);
+    console.warn('Armazenamento ao vivo indisponível; usando contingência local.', error);
     let response = await fetch('data/dashboard.json');
     if(!response.ok) response = await fetch('data/demo.json');
     payload = await response.json();
     payload.meta = {...(payload.meta || {}), connection:'fallback'};
   }
+
   state.meta = payload.meta || {};
+  state.version = state.meta.version || state.meta.updatedAt || null;
   state.allRecords = Array.isArray(payload.records) ? payload.records : [];
+
   populateFilters();
+  if(savedFilters) restoreFilterState(savedFilters);
   applyFilters();
   updateStoryKpis();
+
   const parsedDate = state.meta.updatedAt ? new Date(state.meta.updatedAt) : null;
   const when = parsedDate && !Number.isNaN(parsedDate.getTime())
     ? parsedDate.toLocaleString('pt-BR')
@@ -43,9 +58,49 @@ async function loadData(){
   status.classList.toggle('is-live', live);
   status.classList.toggle('is-fallback', !live);
   status.textContent = live
-    ? `● Conectado ao Google Planilhas · atualizado em ${when}`
+    ? `● Dados sincronizados com a planilha · última alteração: ${when}`
     : `● Modo de contingência local · referência: ${when}`;
-  if(refreshButton){ refreshButton.disabled = false; refreshButton.textContent = 'Atualizar dados'; }
+
+  if(refreshButton && !silent){
+    refreshButton.disabled = false;
+    refreshButton.textContent = 'Verificar atualização';
+  }
+}
+
+function captureFilterState(){
+  const ids=['searchInput','yearFilter','monthFilter','entityFilter','agencyFilter','fundFilter','categoryFilter','statusFilter','startDate','endDate'];
+  return Object.fromEntries(ids.map(id=>[id,$('#'+id)?.value ?? '']));
+}
+
+function restoreFilterState(values){
+  Object.entries(values || {}).forEach(([id,value])=>{
+    const element=$('#'+id);
+    if(!element) return;
+    if(element.tagName==='SELECT' && value && ![...element.options].some(option=>option.value===value)) return;
+    element.value=value;
+  });
+}
+
+async function checkForDashboardUpdate(){
+  if(document.hidden) return;
+  try {
+    const response=await fetch('/api/dashboard-version',{cache:'no-store',headers:{Accept:'application/json'}});
+    if(!response.ok) return;
+    const versionInfo=await response.json();
+    if(versionInfo?.ready && versionInfo.version && state.version && versionInfo.version!==state.version){
+      await loadData({silent:true,preserveFilters:true});
+    }
+  } catch (error) {
+    console.debug('Verificação de versão indisponível.', error);
+  }
+}
+
+function startVersionWatcher(){
+  if(state.versionTimer) clearInterval(state.versionTimer);
+  state.versionTimer=setInterval(checkForDashboardUpdate,15000);
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden) checkForDashboardUpdate();
+  });
 }
 
 function populateFilters(){
@@ -241,10 +296,11 @@ function initStory(){
 function initEvents(){
   $('#filterForm').addEventListener('input',applyFilters); $('#filterForm').addEventListener('change',applyFilters);
   $('#resetFilters').addEventListener('click',()=>{$('#filterForm').reset();applyFilters()});
+  $('#refreshData')?.addEventListener('click',()=>loadData({silent:false,preserveFilters:true}));
   $('#toggleColumns').addEventListener('click',e=>{const on=$('.table-wrap').classList.toggle('show-optional');e.currentTarget.textContent=on?'Ocultar processo':'Exibir processo'});
   $('#clearMonthFocus')?.addEventListener('click',()=>{ $('#monthFilter').value=''; applyFilters(); });
   const dialog=$('#adminDialog'); $$('[data-open-admin]').forEach(btn=>btn.addEventListener('click',()=>dialog.showModal()));
   dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close()});
 }
 
-initStory(); initEvents(); loadData();
+initStory(); initEvents(); loadData({preserveFilters:false}).then(startVersionWatcher);

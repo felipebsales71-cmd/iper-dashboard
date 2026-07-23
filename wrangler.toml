@@ -4,4 +4,11 @@ pages_build_output_dir = "."
 
 [vars]
 GOOGLE_SHEETS_ENDPOINT = "https://script.google.com/macros/s/AKfycbxpZpM5qYM7fLjqROHnCEcEhDa1jMS3IlsK3gi2S7xkwzydWOzA7CwzGtr6oYRFx0LA/exec"
+DASHBOARD_DATA_KEY = "dashboard/current.json"
 
+# Antes de publicar esta versão, crie no Cloudflare R2 o bucket abaixo.
+# O segredo DASHBOARD_WEBHOOK_SECRET deve ser cadastrado no painel do
+# Cloudflare Pages e NÃO deve ser escrito neste arquivo público.
+[[r2_buckets]]
+binding = "IPER_DATA"
+bucket_name = "iper-dashboard-data"

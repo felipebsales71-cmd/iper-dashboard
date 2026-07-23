@@ -1,42 +1,54 @@
 # IPER — Dashboard Previdenciário
 
-Versão final preparada para publicação no Cloudflare Pages, com conexão ao Google Planilhas por meio de Cloudflare Pages Functions.
+Dashboard público do Instituto de Previdência do Estado de Roraima, publicado no Cloudflare Pages e alimentado pelo Google Planilhas.
 
-## Estado da integração
+## Arquitetura atual
 
-- Endpoint do Google Apps Script cadastrado: `https://script.google.com/macros/s/AKfycbxpZpM5qYM7fLjqROHnCEcEhDa1jMS3IlsK3gi2S7xkwzydWOzA7CwzGtr6oYRFx0LA/exec`
-- Rota pública do site: `/api/dashboard`
-- Cache padrão: 300 segundos
-- Fonte principal: Google Planilhas
-- Contingência: `data/dashboard.json`
+- Google Planilhas: fonte administrativa dos dados.
+- Google Apps Script: gera o JSON e detecta alterações.
+- Cloudflare Pages Functions: recebe o webhook e serve a API.
+- Cloudflare R2: armazena a última versão pronta do dashboard.
+- Navegador: lê o R2, sem consultar a planilha em cada acesso.
 
-Quando publicado no Cloudflare Pages, o navegador chama apenas `/api/dashboard`. A função do Cloudflare consulta o Apps Script, valida o JSON e guarda o resultado em cache.
+## Rotas
 
-## Publicação no Cloudflare Pages
+- `GET /api/dashboard`: devolve a última versão armazenada no R2.
+- `GET /api/dashboard-version`: devolve somente versão, data e quantidade de registros.
+- `POST /api/dashboard-refresh`: webhook privado usado pelo Apps Script.
 
-1. Envie todos os arquivos desta pasta para um repositório GitHub.
-2. No Cloudflare, abra **Workers & Pages → Create → Pages → Connect to Git**.
-3. Selecione o repositório.
-4. Framework preset: `None`.
-5. Build command: deixe vazio.
-6. Build output directory: `.`.
-7. Publique.
+## Por que o acesso ficou mais rápido
 
-O arquivo `wrangler.toml` já contém o endpoint e o tempo de cache. A variável `GOOGLE_SHEETS_ENDPOINT` também pode ser substituída no painel do Cloudflare sem alterar o código.
+A planilha não é mais lida quando um visitante abre o site. Ela é lida apenas quando:
 
-## Como confirmar a conexão
+- uma célula é alterada nas abas monitoradas;
+- a estrutura da planilha muda;
+- o administrador executa `atualizarDashboardAgora()`;
+- o bucket está vazio e precisa da inicialização única.
 
-Após a publicação, acesse:
+O R2 possui leitura rápida e o objeto é substituído pelo webhook após cada alteração relevante.
 
-- `/api/dashboard` — deve mostrar JSON;
-- a página inicial — deve exibir “Conectado ao Google Planilhas”.
+## Configuração obrigatória
 
-Caso apareça “Modo de contingência local”, verifique se a implantação do Apps Script foi definida como **Executar como: Eu** e **Quem pode acessar: Qualquer pessoa**.
+Leia `CONFIGURACAO_WEBHOOK.md` antes de publicar.
 
-## Atualização dos dados
+Resumo:
 
-A planilha é consultada automaticamente. Por causa do cache, alterações podem levar até 5 minutos para aparecer no dashboard.
+1. Criar o bucket R2 `iper-dashboard-data`.
+2. Publicar os arquivos no GitHub/Cloudflare Pages.
+3. Substituir o código da planilha por `google-apps-script/Code.gs`.
+4. Executar `gerarSegredoWebhook()`.
+5. Cadastrar o valor como segredo `DASHBOARD_WEBHOOK_SECRET` no Cloudflare.
+6. Atualizar a implantação do Apps Script.
+7. Executar `instalarGatilhos()`.
+8. Executar `atualizarDashboardAgora()`.
 
 ## Segurança
 
-O site é público e somente leitura. A área administrativa permanece visual nesta versão; autenticação e edição de dados devem ser implementadas separadamente. Nenhuma credencial do Google é enviada ao navegador.
+- O segredo do webhook não deve ser salvo no GitHub.
+- `/api/dashboard-refresh` rejeita chamadas sem o cabeçalho correto.
+- O site público permanece somente leitura.
+- O navegador não recebe credenciais do Google nem permissão de escrita no R2.
+
+## Contingência
+
+Se o R2 ou a Function estiverem indisponíveis, o front-end tenta carregar `data/dashboard.json` ou `data/demo.json` para manter a interface acessível.

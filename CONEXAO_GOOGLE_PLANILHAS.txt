@@ -1,4 +1,26 @@
-Conexão configurada
-Endpoint: https://script.google.com/macros/s/AKfycbxpZpM5qYM7fLjqROHnCEcEhDa1jMS3IlsK3gi2S7xkwzydWOzA7CwzGtr6oYRFx0LA/exec
-Cache: 300 segundos
-Rota do dashboard: /api/dashboard
+CONEXÃO GOOGLE PLANILHAS → CLOUDFLARE R2 → DASHBOARD IPER
+
+O dashboard não consulta mais o Google Planilhas em cada abertura.
+
+FLUXO:
+1. Usuário edita a planilha.
+2. Gatilho instalável do Apps Script chama POST /api/dashboard-refresh.
+3. Cloudflare consulta o Apps Script uma única vez.
+4. Cloudflare grava o JSON no bucket R2 iper-dashboard-data.
+5. Visitantes recebem o JSON pronto por GET /api/dashboard.
+
+ARQUIVOS PRINCIPAIS:
+- google-apps-script/Code.gs
+- functions/api/dashboard.js
+- functions/api/dashboard-refresh.js
+- functions/api/dashboard-version.js
+- wrangler.toml
+- CONFIGURACAO_WEBHOOK.md
+
+CONFIGURAÇÕES CLOUDFLARE:
+- R2 binding: IPER_DATA
+- Bucket: iper-dashboard-data
+- Secret: DASHBOARD_WEBHOOK_SECRET
+- Variável: GOOGLE_SHEETS_ENDPOINT
+
+Não coloque o segredo no GitHub.
