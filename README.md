@@ -1,54 +1,58 @@
-# IPER — Dashboard Previdenciário
+# IPER — Dashboard de Arrecadação Previdenciária
 
-Dashboard público do Instituto de Previdência do Estado de Roraima, publicado no Cloudflare Pages e alimentado pelo Google Planilhas.
+Versão integralmente reformulada do dashboard público do Instituto de Previdência do Estado de Roraima.
 
-## Arquitetura atual
+## Estrutura visual
 
-- Google Planilhas: fonte administrativa dos dados.
-- Google Apps Script: gera o JSON e detecta alterações.
-- Cloudflare Pages Functions: recebe o webhook e serve a API.
-- Cloudflare R2: armazena a última versão pronta do dashboard.
-- Navegador: lê o R2, sem consultar a planilha em cada acesso.
+A área operacional segue a sequência definida pela equipe:
+
+1. Filtros principais: ano, mês e fundo.
+2. Indicadores:
+   - arrecadado acumulado no ano;
+   - arrecadado na competência;
+   - quantitativo de servidores.
+3. Arrecadação por fundo na competência.
+4. Evolução acumulada da arrecadação por fundo.
+5. Servidores por fundo e tipo: ativos, aposentados e pensionistas.
+6. Ranking de arrecadação por órgão.
+7. Tabela detalhada com patronal, segurado, compensação, total e servidores.
+
+## Funcionalidades
+
+- filtros integrados em todos os gráficos;
+- painel de filtros avançados;
+- gráficos clicáveis;
+- ranking de órgãos com pesquisa e limite configurável;
+- ordenação e paginação da tabela;
+- exportação em CSV;
+- atualização automática quando a versão do R2 muda;
+- versão responsiva para celular;
+- favicon institucional;
+- abertura institucional com animação controlada pela rolagem.
+
+## Arquitetura de atualização
+
+- Google Planilhas: fonte administrativa.
+- Google Apps Script: gera o JSON e dispara o webhook quando a planilha muda.
+- Cloudflare Pages Functions: valida o webhook e atualiza o armazenamento.
+- Cloudflare R2: guarda a última versão pronta dos dados.
+- Navegador: lê o R2; não consulta a planilha a cada acesso.
 
 ## Rotas
 
-- `GET /api/dashboard`: devolve a última versão armazenada no R2.
-- `GET /api/dashboard-version`: devolve somente versão, data e quantidade de registros.
-- `POST /api/dashboard-refresh`: webhook privado usado pelo Apps Script.
+- `GET /api/dashboard`: devolve os dados armazenados no R2.
+- `GET /api/dashboard-version`: devolve somente a versão atual.
+- `POST /api/dashboard-refresh`: recebe o webhook privado do Apps Script.
 
-## Por que o acesso ficou mais rápido
+## Publicação
 
-A planilha não é mais lida quando um visitante abre o site. Ela é lida apenas quando:
+1. Envie todos os arquivos deste pacote para a raiz do repositório GitHub.
+2. Mantenha o projeto como Cloudflare Pages.
+3. Crie o bucket R2 `iper-dashboard-data`.
+4. Vincule o bucket ao projeto com o binding `IPER_DATA`.
+5. Cadastre `DASHBOARD_WEBHOOK_SECRET` como segredo no Cloudflare.
+6. Substitua o código da planilha por `google-apps-script/Code.gs`.
+7. Atualize a implantação do Apps Script.
+8. Execute `instalarGatilhos()` e `atualizarDashboardAgora()`.
 
-- uma célula é alterada nas abas monitoradas;
-- a estrutura da planilha muda;
-- o administrador executa `atualizarDashboardAgora()`;
-- o bucket está vazio e precisa da inicialização única.
-
-O R2 possui leitura rápida e o objeto é substituído pelo webhook após cada alteração relevante.
-
-## Configuração obrigatória
-
-Leia `CONFIGURACAO_WEBHOOK.md` antes de publicar.
-
-Resumo:
-
-1. Criar o bucket R2 `iper-dashboard-data`.
-2. Publicar os arquivos no GitHub/Cloudflare Pages.
-3. Substituir o código da planilha por `google-apps-script/Code.gs`.
-4. Executar `gerarSegredoWebhook()`.
-5. Cadastrar o valor como segredo `DASHBOARD_WEBHOOK_SECRET` no Cloudflare.
-6. Atualizar a implantação do Apps Script.
-7. Executar `instalarGatilhos()`.
-8. Executar `atualizarDashboardAgora()`.
-
-## Segurança
-
-- O segredo do webhook não deve ser salvo no GitHub.
-- `/api/dashboard-refresh` rejeita chamadas sem o cabeçalho correto.
-- O site público permanece somente leitura.
-- O navegador não recebe credenciais do Google nem permissão de escrita no R2.
-
-## Contingência
-
-Se o R2 ou a Function estiverem indisponíveis, o front-end tenta carregar `data/dashboard.json` ou `data/demo.json` para manter a interface acessível.
+Consulte `CONFIGURACAO_WEBHOOK.md` para o procedimento completo.

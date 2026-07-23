@@ -1,53 +1,53 @@
-# Mapeamento inicial dos dados
+# Mapeamento de dados do Dashboard IPER
 
-## Abas localizadas no arquivo
+## Abas lidas
 
-1. Extrato
-2. Aposentados e Pensionistas
-3. DIPR
-4. Portal
-5. Sistema FELPS
-6. Banco de Dados
-7. PARCELAMENTOS
+- `Banco de Dados`
+- `Sistema FELPS`
 
-A primeira versão do site usa somente as abas solicitadas: `Sistema FELPS` e `Banco de Dados`.
+## Campos utilizados no dashboard
 
-## Banco de Dados
-
-Foram encontrados 1.016 números de linha, sendo 731 registros com órgão, competência e ano preenchidos. A base possui 42 rótulos distintos na coluna `Órgão` e 10 agrupamentos distintos na coluna `Poder`.
-
-### Mapeamento para o dashboard
-
-| Dashboard | Coluna da planilha | Regra |
+| Campo do JSON | Origem principal | Uso |
 |---|---|---|
-| Ano | Ano | Conversão para inteiro |
-| Mês/competência | Competência + Ano | Ex.: Jan/2026 |
-| Ente/Poder | Poder | Agrupamento institucional |
-| Órgão | Órgão | Unidade registrada na base |
-| Fundo | Fundo | FF, FP ou FM convertidos para nome completo |
-| Categoria | Classificação | Ex.: Mensal, Gratificação, Extras |
-| Situação | Data da baixa | Baixado ou Sem data de baixa |
-| Arrecadação | Patronal + Segurado + Compensação | Soma por registro |
-| Ajustes | Encargos - Deduções | Mantido como campo auxiliar |
+| `year` | ANO | filtro e acumulado anual |
+| `month` | COMPETÊNCIA + ANO | filtro e gráficos mensais |
+| `agency` | ÓRGÃO | ranking e tabela |
+| `entity` | PODER | filtro avançado |
+| `fund` | FUNDO | gráficos e filtro |
+| `payroll` | FOLHA | filtro e inferência do tipo |
+| `category` | CLASSIFICAÇÃO | filtro avançado |
+| `serverType` | TIPO DE SERVIDOR ou FOLHA | ativo, aposentado ou pensionista |
+| `servers` | SERVIDORES | quantitativo de servidores |
+| `patronal` | PATRONAL | cota patronal |
+| `insured` | SEGURADO | cota do segurado |
+| `compensation` | COMPENSAÇÃO | compensação |
+| `revenue` | cálculo | patronal + segurado + compensação |
 
-## Aba de origem “Sistema FELPS”
+## Regra do tipo de servidor
 
-A aba possui um quadro de detalhamento por órgão e por referência, além de resumos quantitativos. No arquivo analisado, a referência visível do quadro é `Janeiro/2026`.
+O Apps Script tenta ler, nesta ordem:
 
-O dashboard mantém esse quadro no JSON em `systemIper`, para uso posterior em comparações e validação dos totais.
+1. `TIPO DE SERVIDOR`;
+2. `TIPO SERVIDOR`;
+3. `TIPO`;
+4. inferência pela coluna `FOLHA`.
 
-## Lacunas identificadas
+Na inferência:
 
-As duas abas selecionadas não apresentam colunas estruturadas para:
+- folhas contendo `APOSENT` → `Aposentado`;
+- folhas contendo `PENSION` → `Pensionista`;
+- demais folhas → `Ativo`.
 
-- valor do débito;
-- tipo de débito;
-- número do processo;
-- responsável pelo acompanhamento;
-- meta institucional.
+## Regras dos indicadores
 
-Por isso, esses indicadores aparecem como `Não disponível` no protótipo. A implementação correta depende da indicação de outra aba ou da inclusão dessas colunas na base. Nenhum valor foi inventado.
+### Acumulado anual
 
-## Divergência a validar
+Soma de `revenue` desde janeiro até a competência selecionada.
 
-A coluna `Órgão` do Banco de Dados contém 42 rótulos distintos. O conceito de “quantidade de entes” precisa ser definido administrativamente, pois alguns rótulos podem representar folhas, grupos ou unidades internas, e não entes autônomos. No protótipo, o indicador foi denominado `Quantidade de órgãos` e contabiliza os rótulos distintos existentes na base.
+### Arrecadado na competência
+
+Soma de `revenue` apenas no mês selecionado.
+
+### Quantitativo de servidores
+
+Soma de `servers` apenas na competência selecionada, respeitando todos os filtros.

@@ -37,13 +37,14 @@ function doGet() {
         version: updatedAt,
         isDemo: false,
         capabilities: {
-          debts: false,
-          processes: false,
-          responsible: false
+          revenue: true,
+          servers: true,
+          funds: true,
+          agencies: true
         },
         notes: [
-          'A base atual não contém colunas estruturadas de débito, processo ou responsável.',
-          'Arrecadação calculada como Patronal + Segurado + Compensação.'
+          'Arrecadação calculada como Patronal + Segurado + Compensação.',
+          'O tipo de servidor é lido da coluna TIPO DE SERVIDOR, quando disponível, ou inferido pela folha.'
         ]
       },
       systemIper: readSistemaIper_(sistema),
@@ -295,9 +296,7 @@ function readBancoDeDados_(sheet) {
       payroll: text_(row[col.FOLHA]) || 'Não informado',
       category: title_(text_(row[col.CLASSIFICACAO]) || 'Não informado'),
       status: dischargeDate ? 'Baixado' : 'Sem data de baixa',
-      debtType: 'Não informado',
-      owner: 'Não informado',
-      process: '',
+      serverType: serverType_(row, col),
       servers: integer_(value_(row, col, 'SERVIDORES')),
       dependents: integer_(value_(row, col, 'DEPENDENTES')),
       grossPay: round2_(number_(value_(row, col, 'REMUNERACAO BRUTA'))),
@@ -307,7 +306,6 @@ function readBancoDeDados_(sheet) {
       compensation: round2_(compensation),
       adjustment: round2_(adjustment),
       revenue: round2_(patronal + insured + compensation),
-      debt: null,
       ingress: title_(text_(value_(row, col, 'INGRESSO')) || 'Não informado')
     });
     return records;
@@ -347,6 +345,19 @@ function readSistemaIper_(sheet) {
     total: round2_(total),
     agencies: agencies
   };
+}
+
+
+function serverType_(row, columns) {
+  const explicit =
+    text_(value_(row, columns, 'TIPO DE SERVIDOR')) ||
+    text_(value_(row, columns, 'TIPO SERVIDOR')) ||
+    text_(value_(row, columns, 'TIPO'));
+
+  const source = normalizeHeader_(explicit || value_(row, columns, 'FOLHA'));
+  if (source.indexOf('APOSENT') !== -1) return 'Aposentado';
+  if (source.indexOf('PENSION') !== -1) return 'Pensionista';
+  return 'Ativo';
 }
 
 function getLastUpdated_(spreadsheet) {
