@@ -57,6 +57,27 @@ function inferServerType(row){
   if(payroll.includes('pension')) return 'Pensionista';
   return 'Ativo';
 }
+function normalizeText(value=''){
+  return String(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .trim()
+    .toUpperCase();
+}
+function dashboardAgency(row){
+  const entity=normalizeText(row.entity || row.power || '');
+  const agency=String(row.agency || '').trim();
+  const normalizedAgency=normalizeText(agency);
+
+  // As unidades classificadas no Poder GOVERNO são consolidadas como GOV.
+  // SESAU permanece separada porque sua classificação própria é SESAU.
+  if(entity==='GOVERNO' || normalizedAgency==='GOVERNO' || normalizedAgency==='GOV') return 'GOV';
+
+  // Compatibilidade com bases antigas que não enviavam a coluna Poder.
+  if(!entity && normalizedAgency.startsWith('SE') && normalizedAgency!=='SESAU') return 'GOV';
+
+  return agency || 'Não informado';
+}
 function uniqueValues(rows,key){
   return [...new Set(rows.map(row=>row[key]).filter(Boolean))]
     .sort((a,b)=>String(a).localeCompare(String(b),'pt-BR'));
@@ -111,20 +132,29 @@ async function loadData({preserveFilters=false,announce=false}={}){
   state.version = state.meta.version || state.meta.updatedAt || null;
   state.allRecords = (Array.isArray(payload.records) ? payload.records : []).map((row,index)=>{
     const serverType = inferServerType(row);
+    const patronal=safeNumber(row.patronal);
+    const insured=safeNumber(row.insured);
+    const compensation=safeNumber(row.compensation);
+    const contribution=Number.isFinite(Number(row.contribution))
+      ? Number(row.contribution)
+      : patronal+insured;
     const revenue = Number.isFinite(Number(row.revenue))
       ? Number(row.revenue)
-      : safeNumber(row.patronal)+safeNumber(row.insured)+safeNumber(row.compensation);
+      : contribution+compensation;
     return {
       ...row,
       _id:index,
       year:String(row.year||''),
       month:String(row.month||''),
       monthKey:monthKey(row.month),
+      agency:dashboardAgency(row),
+      originalAgency:String(row.originalAgency || row.agency || '').trim(),
       serverType,
+      contribution,
       revenue,
-      patronal:safeNumber(row.patronal),
-      insured:safeNumber(row.insured),
-      compensation:safeNumber(row.compensation),
+      patronal,
+      insured,
+      compensation,
       servers:safeNumber(row.servers)
     };
   });
@@ -247,7 +277,7 @@ function renderAll(){
 }
 
 function renderKpis(scopes){
-  const annualRevenue=sum(scopes.annualRows,'revenue');
+  const annualRevenue=sum(scopes.annualRows,'contribution');
   const competenceRevenue=sum(scopes.competenceRows,'revenue');
   const servers=sum(scopes.competenceRows,'servers');
   const previousMonthKey=scopes.selectedMonthKey-1;
@@ -258,7 +288,6 @@ function renderKpis(scopes){
   $('#annualRevenueKpi').textContent=MONEY.format(annualRevenue);
   $('#competenceRevenueKpi').textContent=MONEY.format(competenceRevenue);
   $('#serversKpi').textContent=INTEGER.format(servers);
-  $('#annualRevenueNote').textContent=`${INTEGER.format(scopes.annualRows.length)} registros consolidados`;
   $('#competenceRevenueNote').textContent=delta===null ? 'Sem competência anterior para comparação' : `${delta>=0?'▲':'▼'} ${PERCENT.format(Math.abs(delta))} frente à competência anterior`;
   $('#serversNote').textContent=`${new Set(scopes.competenceRows.map(row=>row.agency).filter(Boolean)).size} órgãos na seleção`;
   const monthName=scopes.selectedMonth ? scopes.selectedMonth.replace('/',' de ') : '—';
@@ -361,11 +390,11 @@ function renderServers(scopes){
     summary.innerHTML='';
     return;
   }
-  container.innerHTML=matrix.map(group=>`<section class="server-fund-group"><div class="server-fund-title"><strong>${escapeHtml(group.fund)}</strong><span>${INTEGER.format(group.total)}</span></div>${group.values.map(item=>{
+  container.innerHTML=matrix.map(group=>`<section class="server-fund-group ${fundClass(group.fund)}"><div class="server-fund-title"><strong>${escapeHtml(group.fund)}</strong><span>${INTEGER.format(group.total)}</span></div>${group.values.map(item=>{
     const ratio=state.serverMode==='percent' ? (group.total ? item.value/group.total : 0) : item.value/max;
     const display=state.serverMode==='percent' ? PERCENT.format(group.total ? item.value/group.total : 0) : INTEGER.format(item.value);
     const klass=item.type==='Ativo'?'active':item.type==='Aposentado'?'retired':'pension';
-    return `<button class="server-type-row" type="button" data-server-fund="${escapeHtml(group.fund)}" data-server-type="${escapeHtml(item.type)}"><span>${escapeHtml(item.type)}</span><i class="server-track"><i class="server-fill ${klass}" style="width:${Math.max(0,Math.min(100,ratio*100))}%"></i></i><b>${escapeHtml(display)}</b></button>`;
+    return `<button class="server-type-row ${klass}" type="button" data-server-fund="${escapeHtml(group.fund)}" data-server-type="${escapeHtml(item.type)}"><span class="server-type-label ${klass}"><i aria-hidden="true"></i>${escapeHtml(item.type)}</span><i class="server-track ${klass}"><i class="server-fill ${klass}" style="width:${Math.max(0,Math.min(100,ratio*100))}%"></i></i><b>${escapeHtml(display)}</b></button>`;
   }).join('')}</section>`).join('');
   $$('[data-server-type]',container).forEach(button=>button.addEventListener('click',()=>{
     $('#fundFilter').value=button.dataset.serverFund;
@@ -375,7 +404,10 @@ function renderServers(scopes){
   }));
 
   const typeTotals=SERVER_TYPES.map(type=>({type,value:sum(scopes.competenceRows.filter(row=>row.serverType===type),'servers')}));
-  summary.innerHTML=typeTotals.map(item=>`<div><span>${escapeHtml(item.type)}</span><strong>${INTEGER.format(item.value)}</strong></div>`).join('');
+  summary.innerHTML=typeTotals.map(item=>{
+    const klass=item.type==='Ativo'?'active':item.type==='Aposentado'?'retired':'pension';
+    return `<div class="${klass}"><span><i aria-hidden="true"></i>${escapeHtml(item.type)}</span><strong>${INTEGER.format(item.value)}</strong></div>`;
+  }).join('');
 }
 
 function renderAgencyRanking(scopes){
@@ -506,7 +538,7 @@ function updateStoryMetrics(){
   const latestMonth=months.at(-1)||'';
   const annualRows=state.allRecords.filter(row=>row.year===latestYear && row.monthKey<=monthKey(latestMonth));
   const competenceRows=state.allRecords.filter(row=>row.month===latestMonth);
-  $$('[data-story-kpi="annual"]').forEach(node=>node.textContent=compact(sum(annualRows,'revenue')));
+  $$('[data-story-kpi="annual"]').forEach(node=>node.textContent=compact(sum(annualRows,'contribution')));
   $$('[data-story-kpi="servers"]').forEach(node=>node.textContent=INTEGER.format(sum(competenceRows,'servers')));
 }
 

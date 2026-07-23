@@ -43,7 +43,9 @@ function doGet() {
           agencies: true
         },
         notes: [
-          'Arrecadação calculada como Patronal + Segurado + Compensação.',
+          'O indicador Arrecadado acumulado do ano utiliza apenas Patronal + Segurado.',
+          'Os demais totais de arrecadação mantêm Patronal + Segurado + Compensação.',
+          'Unidades classificadas no Poder GOVERNO são consolidadas como GOV; SESAU permanece separada.',
           'O tipo de servidor é lido da coluna TIPO DE SERVIDOR, quando disponível, ou inferido pela folha.'
         ]
       },
@@ -291,7 +293,8 @@ function readBancoDeDados_(sheet) {
       month: monthLabel_(monthName, year),
       monthName: title_(monthName),
       entity: title_(text_(row[col.PODER]) || 'Não informado'),
-      agency: agency,
+      agency: dashboardAgency_(agency, value_(row, col, 'PODER')),
+      originalAgency: agency,
       fund: fundNames[fundCode] || fundCode || 'Não informado',
       payroll: text_(row[col.FOLHA]) || 'Não informado',
       category: title_(text_(row[col.CLASSIFICACAO]) || 'Não informado'),
@@ -304,6 +307,7 @@ function readBancoDeDados_(sheet) {
       patronal: round2_(patronal),
       insured: round2_(insured),
       compensation: round2_(compensation),
+      contribution: round2_(patronal + insured),
       adjustment: round2_(adjustment),
       revenue: round2_(patronal + insured + compensation),
       ingress: title_(text_(value_(row, col, 'INGRESSO')) || 'Não informado')
@@ -347,6 +351,20 @@ function readSistemaIper_(sheet) {
   };
 }
 
+
+function dashboardAgency_(agency, power) {
+  const normalizedPower = normalizeHeader_(power);
+  const normalizedAgency = normalizeHeader_(agency);
+
+  // Todas as unidades classificadas no Poder GOVERNO são apresentadas
+  // de forma consolidada como GOV. A SESAU permanece separada, pois sua
+  // classificação de poder é SESAU.
+  if (normalizedPower === 'GOVERNO' || normalizedAgency === 'GOVERNO' || normalizedAgency === 'GOV') {
+    return 'GOV';
+  }
+
+  return text_(agency) || 'Não informado';
+}
 
 function serverType_(row, columns) {
   const explicit =
