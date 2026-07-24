@@ -473,7 +473,7 @@ function updateConnectionStatus(live){
   const dot=$('#syncDot');
   const date=parseDate(state.meta.updatedAt);
   status.textContent=live
-    ? `Dados sincronizados com a planilha · última atualização: ${date?DATE_TIME.format(date):'não informada'}`
+    ? `Banco de dados · última atualização: ${date?DATE_TIME.format(date):'não informada'}`
     : `Modo de contingência local · referência: ${date?DATE_TIME.format(date):'não informada'}`;
   dot.classList.toggle('is-live',live);
   dot.classList.toggle('is-fallback',!live);
