@@ -584,7 +584,7 @@ function initHeroStory(){
     logo.style.transform=`translate(-50%,-50%) translateY(${introPhase*-12}vh) scale(${1-introPhase*.27-latePhase*.08}) rotate(${exact*.35}deg)`;
     logo.style.opacity=String(1-latePhase*.34);
 
-    revenueCard.style.transform=`translateY(${introPhase*-2.5}vh) scale(${1+sceneOpacity(exact,1,1.2)*.035-latePhase*.04})`;
+    revenueCard.style.transform=`translateY(${(1-agencyFocus)*28}px) scale(${.94+agencyFocus*.06})`;
     revenueCard.style.opacity=String(agencyFocus*(1-latePhase*.2));
 
     fundCard.style.transform=`translateY(${fundFocus*-18}px) scale(${.96+fundFocus*.06})`;
