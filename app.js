@@ -9,9 +9,6 @@ const state = {
   agencyScope: 'annual',
   agencyLimit: '10',
   agencySearch: '',
-  tablePage: 1,
-  tablePageSize: 25,
-  tableSort: { key: 'monthKey', direction: 'desc' },
   lastScopes: null
 };
 
@@ -273,7 +270,6 @@ function renderAll(){
   renderFundAccumulated(scopes);
   renderServers(scopes);
   renderAgencyRanking(scopes);
-  renderTable(scopes);
 }
 
 function renderKpis(scopes){
@@ -323,7 +319,7 @@ function renderFundCompetence(scopes){
   element.innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${grid}${bars}</svg>`;
   bindTooltips(element);
   $$('[data-fund]',element).forEach(node=>{
-    node.addEventListener('click',()=>{$('#fundFilter').value=node.dataset.fund;state.tablePage=1;renderAll();});
+    node.addEventListener('click',()=>{$('#fundFilter').value=node.dataset.fund;renderAll();});
     node.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();node.click();}});
   });
 }
@@ -370,7 +366,7 @@ function renderFundAccumulated(scopes){
   chart.innerHTML=`<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${grid}${lines}${xLabels}</svg>`;
   bindTooltips(chart);
   $$('[data-month]',chart).forEach(node=>{
-    node.addEventListener('click',()=>{$('#monthFilter').value=node.dataset.month;state.tablePage=1;renderAll();});
+    node.addEventListener('click',()=>{$('#monthFilter').value=node.dataset.month;renderAll();});
     node.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();node.click();}});
   });
 }
@@ -399,7 +395,7 @@ function renderServers(scopes){
   $$('[data-server-type]',container).forEach(button=>button.addEventListener('click',()=>{
     $('#fundFilter').value=button.dataset.serverFund;
     $('#serverTypeFilter').value=button.dataset.serverType;
-    state.tablePage=1;
+    
     renderAll();
   }));
 
@@ -423,57 +419,8 @@ function renderAgencyRanking(scopes){
   container.innerHTML=data.map((item,index)=>`<button class="agency-row" type="button" data-agency="${escapeHtml(item.label)}"><span class="agency-name"><i class="agency-rank">${index+1}</i><strong title="${escapeHtml(item.label)}">${escapeHtml(item.label)}</strong></span><span class="agency-bar-track"><i class="agency-bar-fill" style="width:${Math.max(1,item.value/max*100)}%"></i></span><span class="agency-value">${escapeHtml(MONEY.format(item.value))}</span><span class="agency-share">${escapeHtml(PERCENT.format(total?item.value/total:0))}</span></button>`).join('');
   $$('[data-agency]',container).forEach(button=>button.addEventListener('click',()=>{
     $('#agencyFilter').value=button.dataset.agency;
-    state.tablePage=1;
+    
     renderAll();
-  }));
-}
-
-function groupedTableRows(rows){
-  const map=new Map();
-  rows.forEach(row=>{
-    const key=[row.month,row.agency,row.fund].join('|');
-    if(!map.has(key)) map.set(key,{month:row.month,monthKey:row.monthKey,agency:row.agency,fund:row.fund,patronal:0,insured:0,compensation:0,revenue:0,servers:0});
-    const item=map.get(key);
-    item.patronal+=row.patronal;
-    item.insured+=row.insured;
-    item.compensation+=row.compensation;
-    item.revenue+=row.revenue;
-    item.servers+=row.servers;
-  });
-  return [...map.values()];
-}
-function sortTableRows(rows){
-  const {key,direction}=state.tableSort;
-  const factor=direction==='asc'?1:-1;
-  return [...rows].sort((a,b)=>{
-    const av=a[key],bv=b[key];
-    if(typeof av==='number' && typeof bv==='number') return (av-bv)*factor;
-    return String(av??'').localeCompare(String(bv??''),'pt-BR')*factor;
-  });
-}
-function renderTable(scopes){
-  const rows=sortTableRows(groupedTableRows(scopes.annualRows));
-  const totalPages=Math.max(1,Math.ceil(rows.length/state.tablePageSize));
-  state.tablePage=Math.min(state.tablePage,totalPages);
-  const start=(state.tablePage-1)*state.tablePageSize;
-  const pageRows=rows.slice(start,start+state.tablePageSize);
-  $('#tableResultCount').textContent=`${INTEGER.format(rows.length)} linha(s) consolidadas até ${scopes.selectedMonth || scopes.selectedYear}.`;
-  $('#dataTable').innerHTML=pageRows.map(row=>`<tr><td>${escapeHtml(row.month)}</td><td>${escapeHtml(row.agency)}</td><td><span class="fund-pill ${fundClass(row.fund)}">${escapeHtml(row.fund.replace('Fundo ',''))}</span></td><td class="numeric">${MONEY.format(row.patronal)}</td><td class="numeric">${MONEY.format(row.insured)}</td><td class="numeric">${MONEY.format(row.compensation)}</td><td class="numeric"><strong>${MONEY.format(row.revenue)}</strong></td><td class="numeric">${INTEGER.format(row.servers)}</td></tr>`).join('') || '<tr><td colspan="8">Nenhum registro encontrado.</td></tr>';
-  const totals={patronal:sum(rows,'patronal'),insured:sum(rows,'insured'),compensation:sum(rows,'compensation'),revenue:sum(rows,'revenue'),servers:sum(rows,'servers')};
-  $('#tableTotals').innerHTML=`<tr><td colspan="3">Total do período</td><td class="numeric">${MONEY.format(totals.patronal)}</td><td class="numeric">${MONEY.format(totals.insured)}</td><td class="numeric">${MONEY.format(totals.compensation)}</td><td class="numeric">${MONEY.format(totals.revenue)}</td><td class="numeric">${INTEGER.format(totals.servers)}</td></tr>`;
-  renderPagination(totalPages,rows.length);
-}
-function renderPagination(totalPages,totalRows){
-  const element=$('#pagination');
-  const page=state.tablePage;
-  const pages=[];
-  const from=Math.max(1,page-2),to=Math.min(totalPages,page+2);
-  for(let current=from;current<=to;current++) pages.push(current);
-  element.innerHTML=`<span>Página ${page} de ${totalPages} · ${INTEGER.format(totalRows)} linha(s)</span><div class="pagination-buttons"><button type="button" data-page="${page-1}" ${page<=1?'disabled':''}>Anterior</button>${pages.map(number=>`<button class="${number===page?'is-active':''}" type="button" data-page="${number}">${number}</button>`).join('')}<button type="button" data-page="${page+1}" ${page>=totalPages?'disabled':''}>Próxima</button></div>`;
-  $$('[data-page]',element).forEach(button=>button.addEventListener('click',()=>{
-    state.tablePage=Number(button.dataset.page)||1;
-    renderTable(getScopes());
-    $('.table-panel').scrollIntoView({behavior:'smooth',block:'start'});
   }));
 }
 
@@ -486,7 +433,7 @@ function renderActiveChips(filters){
   container.innerHTML=active.map(([id,label,value])=>`<span class="filter-chip">${escapeHtml(label)}: ${escapeHtml(value)}<button type="button" data-clear-filter="${id}" aria-label="Remover filtro ${escapeHtml(label)}">×</button></span>`).join('');
   $$('[data-clear-filter]',container).forEach(button=>button.addEventListener('click',()=>{
     $(`#${button.dataset.clearFilter}`).value='';
-    state.tablePage=1;
+    
     renderAll();
   }));
 }
@@ -540,6 +487,7 @@ function updateStoryMetrics(){
   const competenceRows=state.allRecords.filter(row=>row.month===latestMonth);
   $$('[data-story-kpi="annual"]').forEach(node=>node.textContent=compact(sum(annualRows,'contribution')));
   $$('[data-story-kpi="servers"]').forEach(node=>node.textContent=INTEGER.format(sum(competenceRows,'servers')));
+  $$('[data-story-period]').forEach(node=>node.textContent=latestMonth ? `Até ${latestMonth}` : 'Competência mais recente');
 }
 
 async function checkForDashboardUpdate(manual=false){
@@ -566,22 +514,6 @@ function startVersionPolling(){
   state.versionTimer=setInterval(()=>checkForDashboardUpdate(false),10000);
 }
 
-function exportCsv(){
-  const scopes=getScopes();
-  const rows=sortTableRows(groupedTableRows(scopes.annualRows));
-  const lines=[
-    ['Competência','Órgão','Fundo','Patronal','Segurado','Compensação','Total','Servidores'],
-    ...rows.map(row=>[row.month,row.agency,row.fund,row.patronal.toFixed(2).replace('.',','),row.insured.toFixed(2).replace('.',','),row.compensation.toFixed(2).replace('.',','),row.revenue.toFixed(2).replace('.',','),Math.round(row.servers)])
-  ];
-  const csv='\ufeff'+lines.map(line=>line.map(value=>`"${String(value).replace(/"/g,'""')}"`).join(';')).join('\r\n');
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const link=document.createElement('a');
-  link.href=url;
-  link.download=`arrecadacao-iper-${scopes.selectedMonth||scopes.selectedYear||'dados'}.csv`;
-  document.body.append(link);link.click();link.remove();URL.revokeObjectURL(url);
-}
-
 function resetFilters(){
   $('#fundFilter').value='';
   $('#entityFilter').value='';
@@ -599,7 +531,7 @@ function resetFilters(){
   state.agencyScope='annual';
   state.agencyLimit='10';
   state.agencySearch='';
-  state.tablePage=1;
+  
   $('#agencyLimit').value='10';
   $('#agencyRankingSearch').value='';
   $$('[data-agency-scope]').forEach(button=>button.classList.toggle('is-active',button.dataset.agencyScope==='annual'));
@@ -610,41 +542,80 @@ function initHeroStory(){
   const story=$('#visao-geral');
   const panels=$$('.story-panel');
   const progress=$('#storyProgress');
-  const visual=$('.story-visual');
+  const composition=$('.hero-composition');
+  const logo=$('.hero-main-logo');
+  const revenueCard=$('.hero-revenue-card');
+  const fundCard=$('.hero-fund-card');
+  const agencyCard=$('.hero-agency-card');
+  const bars=$$('.hero-bars i');
   let ticking=false;
+
+  const clamp=(value,min=0,max=1)=>Math.min(max,Math.max(min,value));
+  const sceneOpacity=(exact,target,spread=.72)=>clamp(1-Math.abs(exact-target)/spread);
+
   const update=()=>{
     ticking=false;
     const rect=story.getBoundingClientRect();
     const distance=story.offsetHeight-innerHeight;
-    const progressValue=Math.min(1,Math.max(0,-rect.top/Math.max(1,distance)));
+    const progressValue=clamp(-rect.top/Math.max(1,distance));
     progress.style.height=`${progressValue*100}%`;
+
     const exact=progressValue*(panels.length-1);
     const current=Math.min(panels.length-1,Math.floor(exact+.5));
     state.heroScene=current;
+
     panels.forEach((panel,index)=>{
-      const distanceFromScene=Math.abs(exact-index);
-      panel.style.opacity=Math.max(0,1-distanceFromScene*1.25);
-      panel.style.transform=innerWidth<=760 ? `translateY(${(index-exact)*35}px)` : `translateY(calc(-50% + ${(index-exact)*48}px))`;
+      const opacity=index===0 ? 0 : sceneOpacity(exact,index,.78);
+      panel.style.opacity=opacity;
+      panel.style.transform=innerWidth<=760
+        ? `translateY(${(index-exact)*36}px)`
+        : `translateY(calc(-50% + ${(index-exact)*52}px))`;
       panel.classList.toggle('is-active',index===current);
     });
-    visual.style.transform=`translateY(-50%) translateX(${exact*5}px) scale(${1+exact*.018})`;
-    $('.story-logo').style.transform=`translateX(-50%) rotate(${exact*.7}deg) scale(${1+exact*.025})`;
-    $('.story-card-main').style.transform=`translateY(${Math.sin(exact)*-9}px)`;
-    $('.story-card-fund').style.transform=`translateY(${Math.cos(exact)*8}px)`;
-    $('#siteHeader').classList.toggle('is-solid',progressValue>.9 || scrollY>innerHeight*.35);
+
+    const introPhase=clamp(exact/1.05);
+    const latePhase=clamp((exact-2.9)/1.1);
+    const fundFocus=sceneOpacity(exact,2,1.15);
+    const agencyFocus=sceneOpacity(exact,3,1.05);
+
+    composition.style.transform=`translateY(${latePhase*-7}vh) scale(${1-latePhase*.075})`;
+    composition.style.opacity=String(1-latePhase*.28);
+
+    logo.style.transform=`translate(-50%,-50%) translateY(${introPhase*-12}vh) scale(${1-introPhase*.27-latePhase*.08}) rotate(${exact*.35}deg)`;
+    logo.style.opacity=String(1-latePhase*.34);
+
+    revenueCard.style.transform=`translateY(${introPhase*-2.5}vh) scale(${1+sceneOpacity(exact,1,1.2)*.035-latePhase*.04})`;
+    revenueCard.style.opacity=String(1-latePhase*.32);
+
+    fundCard.style.transform=`translateY(${fundFocus*-18}px) scale(${.96+fundFocus*.06})`;
+    fundCard.style.opacity=String(.72+fundFocus*.28-latePhase*.25);
+
+    agencyCard.style.transform=`translateY(${(1-agencyFocus)*28}px) scale(${.94+agencyFocus*.06})`;
+    agencyCard.style.opacity=String(agencyFocus*(1-latePhase*.2));
+
+    bars.forEach((bar,index)=>{
+      const rise=clamp((exact-.35-index*.055)/.75);
+      bar.style.transform=`scaleY(${.2+rise*.8})`;
+      bar.style.opacity=String(.45+rise*.55);
+    });
+
+    $('.ambient-grid').style.transform=`translate3d(${exact*-8}px,${exact*-5}px,0) scale(${1+exact*.012})`;
+    $('.scroll-hint').style.opacity=String(clamp(1-progressValue*5));
+    $('#siteHeader').classList.toggle('is-solid',progressValue>.86 || scrollY>innerHeight*.35);
   };
+
   addEventListener('scroll',()=>{if(!ticking){requestAnimationFrame(update);ticking=true;}},{passive:true});
   addEventListener('resize',update);
   update();
 }
 
 function initEvents(){
-  $('#yearFilter').addEventListener('change',()=>{syncMonthOptions(false);state.tablePage=1;renderAll();});
+  $('#yearFilter').addEventListener('change',()=>{syncMonthOptions(false);renderAll();});
   ['monthFilter','fundFilter','entityFilter','agencyFilter','categoryFilter','payrollFilter','serverTypeFilter','startDate','endDate'].forEach(id=>{
-    $(`#${id}`).addEventListener('change',()=>{state.tablePage=1;renderAll();});
+    $(`#${id}`).addEventListener('change',()=>{renderAll();});
   });
   let searchTimer;
-  $('#searchInput').addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>{state.tablePage=1;renderAll();},180);});
+  $('#searchInput').addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>{renderAll();},180);});
   $('#toggleAdvancedFilters').addEventListener('click',event=>{
     const panel=$('#advancedFilters');
     panel.hidden=!panel.hidden;
@@ -665,15 +636,6 @@ function initEvents(){
   }));
   $('#agencyLimit').addEventListener('change',event=>{state.agencyLimit=event.target.value;renderAgencyRanking(getScopes());});
   $('#agencyRankingSearch').addEventListener('input',event=>{state.agencySearch=event.target.value;renderAgencyRanking(getScopes());});
-  $('#pageSize').addEventListener('change',event=>{state.tablePageSize=Number(event.target.value)||25;state.tablePage=1;renderTable(getScopes());});
-  $$('[data-sort]').forEach(button=>button.addEventListener('click',()=>{
-    const key=button.dataset.sort;
-    if(state.tableSort.key===key) state.tableSort.direction=state.tableSort.direction==='asc'?'desc':'asc';
-    else state.tableSort={key,direction:key==='agency'||key==='fund'||key==='month'?'asc':'desc'};
-    state.tablePage=1;
-    renderTable(getScopes());
-  }));
-  $('#exportCsv').addEventListener('click',exportCsv);
 
   const dialog=$('#adminDialog');
   $$('[data-open-admin]').forEach(button=>button.addEventListener('click',()=>dialog.showModal()));

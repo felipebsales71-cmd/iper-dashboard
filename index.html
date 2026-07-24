@@ -27,59 +27,77 @@
   </header>
 
   <main>
-    <section class="scroll-story" id="visao-geral" aria-label="Apresentação do dashboard IPER">
+    <section class="scroll-story" id="visao-geral" aria-label="Apresentação interativa do IPER">
       <div class="story-stage" id="inicio">
-        <div class="story-grid" aria-hidden="true"></div>
+        <div class="ambient-grid" aria-hidden="true"></div>
         <div class="story-progress" aria-hidden="true"><span id="storyProgress"></span></div>
 
-        <div class="story-copy">
-          <article class="story-panel is-active" data-scene="0">
-            <p class="story-kicker">Governo do Estado de Roraima · IPER</p>
-            <img class="story-government" src="assets/brasao-roraima.png" alt="Brasão do Estado de Roraima" />
-            <h1>Arrecadação previdenciária com leitura simples e gestão orientada por dados.</h1>
-            <p>Um painel público para acompanhar fundos, órgãos, competências e quantitativo de servidores.</p>
+        <div class="hero-composition" aria-hidden="true">
+          <div class="hero-glow hero-glow-blue"></div>
+          <div class="hero-glow hero-glow-green"></div>
+
+          <img class="hero-main-logo" src="assets/logo-iper.png" alt="" />
+
+          <article class="hero-revenue-card">
+            <span>Arrecadado no ano</span>
+            <strong data-story-kpi="annual">—</strong>
+            <small data-story-period>Competência mais recente</small>
+            <div class="hero-bars" aria-hidden="true">
+              <i style="--bar:36%"></i>
+              <i style="--bar:52%"></i>
+              <i style="--bar:46%"></i>
+              <i style="--bar:70%"></i>
+              <i style="--bar:66%"></i>
+              <i style="--bar:88%"></i>
+            </div>
           </article>
 
+          <article class="hero-fund-card">
+            <span>Fundos</span>
+            <div><i class="fund-dot previdentiary"></i>Previdenciário</div>
+            <div><i class="fund-dot financial"></i>Financeiro</div>
+            <div><i class="fund-dot military"></i>Militar</div>
+          </article>
+
+          <article class="hero-agency-card">
+            <span>Arrecadação por órgão</span>
+            <b style="--agency:92%"></b>
+            <b style="--agency:76%"></b>
+            <b style="--agency:58%"></b>
+            <b style="--agency:42%"></b>
+          </article>
+        </div>
+
+        <div class="story-copy" id="storyCopy">
+          <article class="story-panel story-panel-intro is-active" data-scene="0" aria-label="Apresentação inicial"></article>
+
           <article class="story-panel" data-scene="1">
-            <p class="story-kicker">Visão consolidada</p>
-            <h2>Do acumulado anual ao detalhe de cada cota.</h2>
+            <p class="story-kicker">Arrecadação previdenciária</p>
+            <h1>Os números públicos ganham movimento.</h1>
+            <p>A rolagem acompanha a evolução da arrecadação e preserva o contexto de cada competência.</p>
+          </article>
+
+          <article class="story-panel" data-scene="2">
+            <p class="story-kicker">Fundos previdenciários</p>
+            <h2>Financeiro, Previdenciário e Militar na mesma leitura.</h2>
+            <p>Valores consolidados e separados por fundo, sem perder a visão geral.</p>
+          </article>
+
+          <article class="story-panel" data-scene="3">
+            <p class="story-kicker">Órgãos e servidores</p>
+            <h2>Do total anual à composição por órgão.</h2>
             <div class="story-metrics">
               <div><span>Arrecadado</span><strong data-story-kpi="annual">—</strong></div>
               <div><span>Servidores</span><strong data-story-kpi="servers">—</strong></div>
             </div>
           </article>
 
-          <article class="story-panel" data-scene="2">
-            <p class="story-kicker">Fundos previdenciários</p>
-            <h2>Competência, acumulado e composição em uma única narrativa.</h2>
-            <p>Financeiro, Previdenciário e Militar comparados de forma visual e acessível.</p>
-          </article>
-
-          <article class="story-panel" data-scene="3">
+          <article class="story-panel" data-scene="4">
             <p class="story-kicker">Consulta pública</p>
-            <h2>Filtros objetivos, gráficos interativos e tabela detalhada.</h2>
+            <h2>Explore os dados completos no dashboard.</h2>
+            <p>Filtros, gráficos e rankings organizados para leitura rápida em qualquer dispositivo.</p>
             <a class="primary-button story-action" href="#dashboard">Abrir dashboard</a>
           </article>
-        </div>
-
-        <div class="story-visual" aria-hidden="true">
-          <div class="story-halo"></div>
-          <img class="story-logo" src="assets/logo-iper.png" alt="" />
-          <div class="story-card story-card-main">
-            <span>Arrecadado no ano</span>
-            <strong data-story-kpi="annual">—</strong>
-            <div class="story-bars"><i></i><i></i><i></i><i></i><i></i><i></i></div>
-          </div>
-          <div class="story-card story-card-fund">
-            <span>Fundos</span>
-            <div><i class="fund-dot previdentiary"></i>Previdenciário</div>
-            <div><i class="fund-dot financial"></i>Financeiro</div>
-            <div><i class="fund-dot military"></i>Militar</div>
-          </div>
-          <!-- <div class="story-card story-card-agency">
-            <span>Órgãos</span>
-            <b style="--w:92%"></b><b style="--w:72%"></b><b style="--w:54%"></b><b style="--w:38%"></b>
-          </div> -->
         </div>
 
         <div class="scroll-hint" aria-hidden="true"><span></span>Role para explorar</div>
@@ -125,7 +143,7 @@
           <div class="toolbar-actions">
             <button class="soft-button" id="refreshData" type="button">Verificar atualização</button>
             <button class="soft-button" id="resetFilters" type="button">Limpar filtros</button>
-            <!-- <button class="primary-button" type="button" data-open-admin>Administrar</button> -->
+            <button class="primary-button" type="button" data-open-admin>Administrar</button>
           </div>
         </div>
 
@@ -239,48 +257,6 @@
             </div>
           </header>
           <div class="agency-ranking" id="agencyRanking"></div>
-        </article>
-
-        <article class="data-panel table-panel">
-          <header class="panel-heading table-heading">
-            <div>
-              <p class="panel-kicker">Cotas previdenciárias</p>
-              <h3>Arrecadação detalhada dos órgãos</h3>
-              <p id="tableResultCount">—</p>
-            </div>
-            <div class="table-actions">
-              <label>Linhas
-                <select id="pageSize">
-                  <option value="10">10</option>
-                  <option value="25" selected>25</option>
-                  <option value="50">50</option>
-                  <option value="100">100</option>
-                </select>
-              </label>
-              <button class="soft-button" id="exportCsv" type="button">Exportar CSV</button>
-            </div>
-          </header>
-
-          <div class="table-wrap" tabindex="0">
-            <table>
-              <thead>
-                <tr>
-                  <th><button type="button" data-sort="month">Competência</button></th>
-                  <th><button type="button" data-sort="agency">Órgão</button></th>
-                  <th><button type="button" data-sort="fund">Fundo</button></th>
-                  <th class="numeric"><button type="button" data-sort="patronal">Patronal</button></th>
-                  <th class="numeric"><button type="button" data-sort="insured">Segurado</button></th>
-                  <th class="numeric"><button type="button" data-sort="compensation">Compensação</button></th>
-                  <th class="numeric"><button type="button" data-sort="revenue">Total</button></th>
-                  <th class="numeric"><button type="button" data-sort="servers">Servidores</button></th>
-                </tr>
-              </thead>
-              <tbody id="dataTable"></tbody>
-              <tfoot id="tableTotals"></tfoot>
-            </table>
-          </div>
-
-          <div class="pagination" id="pagination"></div>
         </article>
       </div>
     </section>
