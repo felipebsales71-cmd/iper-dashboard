@@ -395,7 +395,7 @@ function renderServers(scopes){
   $$('[data-server-type]',container).forEach(button=>button.addEventListener('click',()=>{
     $('#fundFilter').value=button.dataset.serverFund;
     $('#serverTypeFilter').value=button.dataset.serverType;
-    
+
     renderAll();
   }));
 
@@ -419,7 +419,7 @@ function renderAgencyRanking(scopes){
   container.innerHTML=data.map((item,index)=>`<button class="agency-row" type="button" data-agency="${escapeHtml(item.label)}"><span class="agency-name"><i class="agency-rank">${index+1}</i><strong title="${escapeHtml(item.label)}">${escapeHtml(item.label)}</strong></span><span class="agency-bar-track"><i class="agency-bar-fill" style="width:${Math.max(1,item.value/max*100)}%"></i></span><span class="agency-value">${escapeHtml(MONEY.format(item.value))}</span><span class="agency-share">${escapeHtml(PERCENT.format(total?item.value/total:0))}</span></button>`).join('');
   $$('[data-agency]',container).forEach(button=>button.addEventListener('click',()=>{
     $('#agencyFilter').value=button.dataset.agency;
-    
+
     renderAll();
   }));
 }
@@ -433,7 +433,7 @@ function renderActiveChips(filters){
   container.innerHTML=active.map(([id,label,value])=>`<span class="filter-chip">${escapeHtml(label)}: ${escapeHtml(value)}<button type="button" data-clear-filter="${id}" aria-label="Remover filtro ${escapeHtml(label)}">×</button></span>`).join('');
   $$('[data-clear-filter]',container).forEach(button=>button.addEventListener('click',()=>{
     $(`#${button.dataset.clearFilter}`).value='';
-    
+
     renderAll();
   }));
 }
@@ -531,7 +531,7 @@ function resetFilters(){
   state.agencyScope='annual';
   state.agencyLimit='10';
   state.agencySearch='';
-  
+
   $('#agencyLimit').value='10';
   $('#agencyRankingSearch').value='';
   $$('[data-agency-scope]').forEach(button=>button.classList.toggle('is-active',button.dataset.agencyScope==='annual'));
@@ -575,7 +575,7 @@ function initHeroStory(){
 
     const introPhase=clamp(exact/1.05);
     const latePhase=clamp((exact-2.9)/1.1);
-    const fundFocus=sceneOpacity(exact,2,1.15);
+    const fundFocus=sceneOpacity(exact,3,1.05);
     const agencyFocus=sceneOpacity(exact,3,1.05);
 
     composition.style.transform=`translateY(${latePhase*-7}vh) scale(${1-latePhase*.075})`;
@@ -585,10 +585,10 @@ function initHeroStory(){
     logo.style.opacity=String(1-latePhase*.34);
 
     revenueCard.style.transform=`translateY(${introPhase*-2.5}vh) scale(${1+sceneOpacity(exact,1,1.2)*.035-latePhase*.04})`;
-    revenueCard.style.opacity=String(1-latePhase*.32);
+    revenueCard.style.opacity=String(agencyFocus*(1-latePhase*.2));
 
     fundCard.style.transform=`translateY(${fundFocus*-18}px) scale(${.96+fundFocus*.06})`;
-    fundCard.style.opacity=String(.72+fundFocus*.28-latePhase*.25);
+    fundCard.style.opacity=String(agencyFocus*(1-latePhase*.2));
 
     agencyCard.style.transform=`translateY(${(1-agencyFocus)*28}px) scale(${.94+agencyFocus*.06})`;
     agencyCard.style.opacity=String(agencyFocus*(1-latePhase*.2));
