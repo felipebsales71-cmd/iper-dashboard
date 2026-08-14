@@ -6,7 +6,7 @@
  * chamada pelo gatilho instalável do Google Apps Script.
  */
 const DEFAULT_DATA_KEY = 'dashboard/current.json';
-const DEFAULT_GOOGLE_SHEETS_ENDPOINT = 'https://script.google.com/macros/s/1ZrkuS6uBhVX05SB0LpQPf2Kyix1lDqf7xS3zfnYQ23RcTwO1z7vPc4yk/exec';
+const DEFAULT_GOOGLE_SHEETS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx8WRZ0RUS4oj9zLCwZPHnU9cOPx19d1ArWOKDKQCW1uQ42hol3RACT9C4s9s2OMii_/exec';
 
 function jsonError(message, status = 500, details) {
   return Response.json(
