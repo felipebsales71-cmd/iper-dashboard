@@ -52,6 +52,8 @@ const DATE_TIME = new Intl.DateTimeFormat("pt-BR", {
   timeStyle: "medium",
 });
 
+const iframeMode = document.body.dataset.iframeMode || "full";
+
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 const sum = (rows, key) =>
@@ -220,15 +222,101 @@ async function loadData({ preserveFilters = false, announce = false } = {}) {
     };
   });
 
+   if (iframeMode === "kpis") {
+    renderIframeKpis();
+    return;
+  }
+
   populateFilters();
   setDefaultPeriod();
+
   if (saved) restoreFilters(saved);
+  
   syncMonthOptions(true);
   renderAll();
   updateConnectionStatus(live);
   updateStoryMetrics();
   startVersionPolling();
   if (announce) showToast("Dados do dashboard atualizados.");
+}
+
+function renderIframeKpis() {
+  const years = uniqueValues(state.allRecords, "year")
+    .sort((a, b) => Number(b) - Number(a));
+
+  const selectedYear = years[0] || "";
+
+  const yearRows = state.allRecords.filter(
+    row => row.year === selectedYear
+  );
+
+  const months = uniqueValues(yearRows, "month")
+    .sort((a, b) => monthKey(a) - monthKey(b));
+
+  const selectedMonth = months.at(-1) || "";
+  const selectedMonthKey = monthKey(selectedMonth);
+
+  const annualRows = yearRows.filter(
+    row => row.monthKey <= selectedMonthKey
+  );
+
+  const competenceRows = yearRows.filter(
+    row => row.month === selectedMonth
+  );
+
+  const annualRevenue = sum(annualRows, "contribution");
+  const competenceRevenue = sum(competenceRows, "revenue");
+  const servers = sum(competenceRows, "servers");
+
+  const previousMonthKey = selectedMonthKey - 1;
+
+  const previousRows = yearRows.filter(
+    row => row.monthKey === previousMonthKey
+  );
+
+  const previousRevenue = sum(previousRows, "revenue");
+
+  const delta = previousRevenue
+    ? (competenceRevenue - previousRevenue) / previousRevenue
+    : null;
+
+  $("#annualRevenueKpi").textContent =
+    MONEY.format(annualRevenue);
+
+  $("#competenceRevenueKpi").textContent =
+    MONEY.format(competenceRevenue);
+
+  $("#serversKpi").textContent =
+    INTEGER.format(servers);
+
+  $("#competenceRevenueNote").textContent =
+    delta === null
+      ? "Sem competência anterior para comparação"
+      : `${delta >= 0 ? "▲" : "▼"} ${PERCENT.format(
+          Math.abs(delta)
+        )} frente à competência anterior`;
+
+  $("#serversNote").textContent =
+    `${new Set(
+      competenceRows
+        .map(row => row.agency)
+        .filter(Boolean)
+    ).size} órgãos na seleção`;
+
+  $("#annualPeriodLabel").textContent =
+    selectedMonth
+      ? `Jan a ${selectedMonth}`
+      : selectedYear;
+
+  $("#competenceLabel").textContent =
+    selectedMonth
+      ? selectedMonth.replace("/", " de ")
+      : "—";
+
+  $("#serversPeriodLabel").textContent =
+    selectedMonth
+      ? selectedMonth.replace("/", " de ")
+      : "—";
 }
 
 function populateSelect(select, key, defaultLabel) {
@@ -1059,6 +1147,10 @@ function initEvents() {
   });
 }
 
-initHeroStory();
-initEvents();
-loadData();
+if (iframeMode === "kpis") {
+  loadData();
+} else {
+  initHeroStory();
+  initEvents();
+  loadData();
+}

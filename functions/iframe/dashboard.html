@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="/styles.css">
+</head>
+
+<body data-iframe-mode="dashboard">
+
+  <main>
+    <div class="dashboard-shell">
+
+      <section class="dashboard-hero-card">
+          <div class="dashboard-title-block">
+            <p class="micro-label">Consulta pública</p>
+            <h2 id="dashboardTitle">Arrecadação Previdenciária</h2>
+            <p>Acompanhamento consolidado da arrecadação, dos fundos e do quantitativo de servidores públicos do estado de Roraima.</p>
+            <div class="sync-line">
+              <span class="sync-dot" id="syncDot"></span>
+              <span id="dataStatus">Carregando informações…</span>
+            </div>
+          </div>
+
+          <form class="primary-filters" id="primaryFilters" aria-label="Filtros principais">
+            <label>
+              <span>Ano</span>
+              <select id="yearFilter"><option value="">—</option></select>
+            </label>
+            <label>
+              <span>Mês</span>
+              <select id="monthFilter"><option value="">—</option></select>
+            </label>
+            <label>
+              <span>Fundo</span>
+              <select id="fundFilter"><option value="">Consolidado</option></select>
+            </label>
+          </form>
+        </section>
+
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <button class="soft-button" id="toggleAdvancedFilters" type="button" aria-expanded="false" aria-controls="advancedFilters">
+              <span aria-hidden="true">☰</span> Mais filtros
+            </button>
+            <p class="currency-note">Valores expressos em reais.</p>
+            <div class="active-filter-chips" id="activeFilterChips" aria-live="polite"></div>
+          </div>
+          <div class="toolbar-actions">
+            <button class="soft-button" id="refreshData" type="button">Verificar atualização</button>
+            <button class="soft-button" id="resetFilters" type="button">Limpar filtros</button>
+            <!-- <button class="primary-button" type="button" data-open-admin>Administrar</button> -->
+          </div>
+        </div>
+
+        <form class="advanced-filters" id="advancedFilters" aria-label="Filtros avançados" hidden>
+          <label>Pesquisa geral<input id="searchInput" type="search" placeholder="Órgão, poder, fundo ou folha" /></label>
+          <label>Ente / Poder<select id="entityFilter"><option value="">Todos</option></select></label>
+          <label>Órgão<select id="agencyFilter"><option value="">Todos</option></select></label>
+          <label>Categoria<select id="categoryFilter"><option value="">Todas</option></select></label>
+          <label>Folha<select id="payrollFilter"><option value="">Todas</option></select></label>
+          <label>Tipo de servidor<select id="serverTypeFilter"><option value="">Todos</option></select></label>
+          <label>Data inicial<input id="startDate" type="date" /></label>
+          <label>Data final<input id="endDate" type="date" /></label>
+        </form>
+
+        <section class="kpi-grid" aria-label="Indicadores principais">
+          <article class="metric-card metric-blue">
+            <div class="metric-card-head">
+              <span>Arrecadado acumulado do ano</span>
+              <i aria-hidden="true">▣</i>
+            </div>
+            <strong id="annualRevenueKpi">—</strong>
+            <br>
+            <div class="metric-footer"><span>Patronal + segurado</span><b id="annualPeriodLabel">—</b></div>
+          </article>
+
+          <article class="metric-card metric-green">
+            <div class="metric-card-head">
+              <span>Arrecadado na competência</span>
+              <i aria-hidden="true">◎</i>
+            </div>
+            <strong id="competenceRevenueKpi">—</strong>
+            <small id="competenceRevenueNote">—</small>
+            <div class="metric-footer"><span>Competência selecionada</span><b id="competenceLabel">—</b></div>
+          </article>
+
+          <article class="metric-card metric-yellow">
+            <div class="metric-card-head">
+              <span>Quantitativo de servidores</span>
+              <i aria-hidden="true">↗</i>
+            </div>
+            <strong id="serversKpi">—</strong>
+            <small id="serversNote">—</small>
+            <div class="metric-footer"><span>Na competência selecionada</span><b id="serversPeriodLabel">—</b></div>
+          </article>
+        </section>
+
+        <section class="fund-layout-grid">
+          <div class="fund-left-column">
+            <article class="data-panel">
+              <header class="panel-heading">
+                <div>
+                  <p class="panel-kicker">Competência</p>
+                  <h3>Arrecadação por fundo</h3>
+                  <p>Comparação entre os fundos no mês selecionado.</p>
+                </div>
+                <span class="panel-badge" id="fundCompetenceBadge">—</span>
+              </header>
+              <div class="chart-area chart-medium" id="fundCompetenceChart" role="img" aria-label="Arrecadação por fundo na competência"></div>
+            </article>
+
+            <article class="data-panel">
+              <header class="panel-heading">
+                <div>
+                  <p class="panel-kicker">Acumulado anual</p>
+                  <h3>Evolução da arrecadação por fundo</h3>
+                  <p>Linhas acumuladas até a competência selecionada.</p>
+                </div>
+                <button class="text-button" id="resetFundVisibility" type="button">Exibir todos</button>
+              </header>
+              <div class="fund-line-legend" id="fundLineLegend"></div>
+              <div class="chart-area chart-large" id="fundAccumulatedChart" role="img" aria-label="Arrecadação acumulada por fundo"></div>
+            </article>
+          </div>
+
+          <article class="data-panel server-panel">
+            <header class="panel-heading">
+              <div>
+                <p class="panel-kicker">Pessoas</p>
+                <h3>Servidores por fundo e tipo</h3>
+                <p>Ativos, aposentados e pensionistas na competência selecionada.</p>
+              </div>
+              <div class="segmented-control" role="group" aria-label="Formato dos servidores">
+                <button class="is-active" type="button" data-server-mode="quantity">Quantidade</button>
+                <button type="button" data-server-mode="percent">Percentual</button>
+              </div>
+            </header>
+            <div class="server-chart" id="serverChart"></div>
+            <div class="server-summary" id="serverSummary"></div>
+          </article>
+        </section>
+
+        <article class="data-panel agency-panel">
+          <header class="panel-heading agency-heading">
+            <div>
+              <p class="panel-kicker">Ranking</p>
+              <h3>Arrecadação por órgão</h3>
+              <p>Participação dos órgãos no período definido.</p>
+            </div>
+            <div class="agency-controls">
+              <div class="segmented-control" role="group" aria-label="Período do ranking">
+                <button type="button" data-agency-scope="competence">Competência</button>
+                <button class="is-active" type="button" data-agency-scope="annual">Acumulado</button>
+              </div>
+              <input id="agencyRankingSearch" type="search" placeholder="Pesquisar órgão" aria-label="Pesquisar no ranking de órgãos" />
+              <select id="agencyLimit" aria-label="Quantidade de órgãos">
+                <option value="10">Top 10</option>
+                <option value="20">Top 20</option>
+                <option value="all">Todos</option>
+              </select>
+            </div>
+          </header>
+          <div class="agency-ranking" id="agencyRanking"></div>
+        </article>
+
+    </div>
+  </main>
+
+  <div class="tooltip" id="tooltip" role="status"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="/app.js" defer></script>
+
+</body>
+</html>
