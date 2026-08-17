@@ -3,7 +3,7 @@
 Versão integralmente reformulada do dashboard público do Instituto de Previdência do Estado de Roraima.
 
 ## Estrutura visual
-
+ 
 A área operacional segue a sequência definida pela equipe:
 
 1. Filtros principais: ano, mês e fundo.
