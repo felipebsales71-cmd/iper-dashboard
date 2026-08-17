@@ -1767,12 +1767,14 @@ footer {
     bottom: 14%;
     width: auto;
     padding: 16px 17px;
+    display: none;
   }
   .hero-fund-card {
     right: 16px;
     bottom: 37%;
     width: 180px;
     padding: 15px;
+    display: none;
   }
   .hero-agency-card {
     display: none;
