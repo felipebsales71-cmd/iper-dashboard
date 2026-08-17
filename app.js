@@ -1153,6 +1153,9 @@ function initEvents() {
 
 if (iframeMode === "kpis") {
   loadData();
+} else if (iframeMode === "dashboard") {
+  initEvents();
+  loadData();
 } else {
   initHeroStory();
   initEvents();
