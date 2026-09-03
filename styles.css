@@ -743,7 +743,7 @@ button {
 	display: block;
 	margin: 22px 0 6px;
 	font-family: var(--font-mono);
-	font-size: 20px;
+	font-size: clamp(14px, 2vw, 20px);
 	letter-spacing: -0.05em;
 	font-weight: 700;
 	color: #12345a;
