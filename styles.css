@@ -676,7 +676,7 @@ button {
 	margin-bottom: 14px;
 }
 .metric-card {
-	padding: 19px 20px 0;
+	padding: calc(0.25em * 4);
 	border: 1px solid var(--border);
 	border-radius: var(--radius);
 	background: #fff;
@@ -754,10 +754,11 @@ button {
 	min-height: 20px;
 	color: #587086;
 	font-size: 0.74rem;
+	margin-bottom: 10px;
 }
 .metric-footer {
-	margin: 18px -20px 0;
-	padding: 11px 20px;
+	margin: 10px 0 0 0;
+	padding: calc(0.25rem * 3) 0 0 0;
 	border-top: 1px solid var(--border-soft);
 	display: flex;
 	justify-content: space-between;
