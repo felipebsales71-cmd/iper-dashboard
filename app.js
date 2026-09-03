@@ -292,9 +292,9 @@ function renderIframeKpis() {
 		? (competenceRevenue - previousRevenue) / previousRevenue
 		: null;
 
-	$("#annualRevenueKpi").textContent = MONEY.format(annualRevenue);
-
-	$("#competenceRevenueKpi").textContent = MONEY.format(competenceRevenue);
+	$("#annualRevenueKpi").textContent = `R$ ${MONEY.format(annualRevenue)}`;
+	$("#competenceRevenueKpi").textContent =
+		`R$ ${MONEY.format(competenceRevenue)}`;
 
 	$("#serversKpi").textContent = INTEGER.format(servers);
 
