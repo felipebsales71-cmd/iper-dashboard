@@ -750,10 +750,11 @@ button {
 	overflow-wrap: anywhere;
 }
 .metric-card > small {
+	font-family: var(--font-sans);
+	font-size: 0.75rem;
 	display: block;
 	min-height: 20px;
 	color: #587086;
-	font-size: 0.74rem;
 	margin-bottom: 10px;
 }
 .metric-footer {
