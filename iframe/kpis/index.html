@@ -4,6 +4,7 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="stylesheet" href="/styles.css" />
+		<!-- Lucide Icons v0.468.0: somente os SVGs utilizados foram incorporados. -->
 		<style>
 			html,
 			body {
@@ -18,7 +19,7 @@
 			<article class="metric-card metric-blue">
 				<div class="metric-card-head">
 					<span>Arrecadado acumulado do ano</span>
-					<i aria-hidden="true">▣</i>
+					<i aria-hidden="true"><svg class="lucide lucide-wallet" viewBox="0 0 24 24"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v3h-3a2 2 0 0 0 0 4h3v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5"></path><path d="M18 12h.01"></path></svg></i>
 				</div>
 				<strong id="annualRevenueKpi">—</strong>
 				<br />
@@ -30,7 +31,7 @@
 			<article class="metric-card metric-green">
 				<div class="metric-card-head">
 					<span>Arrecadado na competência</span>
-					<i aria-hidden="true">◎</i>
+					<i aria-hidden="true"><svg class="lucide lucide-calendar-days" viewBox="0 0 24 24"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path><path d="M8 18h.01"></path><path d="M12 18h.01"></path></svg></i>
 				</div>
 				<strong id="competenceRevenueKpi">—</strong>
 				<small id="competenceRevenueNote">—</small>
@@ -42,10 +43,44 @@
 			<article class="metric-card metric-yellow">
 				<div class="metric-card-head">
 					<span>Quantitativo de servidores</span>
-					<i aria-hidden="true">↗</i>
+					<i aria-hidden="true"><svg class="lucide lucide-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></i>
 				</div>
 				<strong id="serversKpi">—</strong>
-				<small id="serversNote">—</small>
+				<div class="metric-disclosure">
+					<div class="metric-disclosure-row">
+						<button
+						class="metric-detail-button"
+						id="serversDetailToggle"
+						type="button"
+						aria-expanded="false"
+						aria-controls="serversDetailPopover"
+					>
+						<span id="serversNote">—</span>
+						<svg class="lucide lucide-chevron-down lucide-aux" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg>
+						</button>
+						<small class="competence-progress" id="competenceProgress" hidden>
+							<span aria-hidden="true"></span>
+							Competência em andamento
+						</small>
+					</div>
+					<div
+						class="metric-popover"
+						id="serversDetailPopover"
+						role="region"
+						aria-labelledby="serversDetailTitle"
+						hidden
+					>
+						<div class="metric-popover-head">
+							<strong id="serversDetailTitle">Órgãos considerados</strong>
+							<button class="metric-popover-close" id="serversDetailClose" type="button" aria-label="Fechar relação de órgãos">
+								<svg class="lucide lucide-x lucide-aux" aria-hidden="true" viewBox="0 0 24 24"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+							</button>
+						</div>
+						<p id="serversDetailContext"></p>
+						<ul id="serversAgencyList"></ul>
+						<small>A relação considera a competência e os filtros ativos.</small>
+					</div>
+				</div>
 				<div class="metric-footer">
 					<span>Na competência selecionada</span
 					><b id="serversPeriodLabel">—</b>
