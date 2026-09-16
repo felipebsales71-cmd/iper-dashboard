@@ -168,7 +168,39 @@
 							<i aria-hidden="true"><svg class="lucide lucide-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></i>
 						</div>
 						<strong id="serversKpi">—</strong>
-						<small id="serversNote">—</small>
+						<div class="metric-disclosure">
+							<button
+								class="metric-detail-button"
+								id="serversDetailToggle"
+								type="button"
+								aria-expanded="false"
+								aria-controls="serversDetailPopover"
+							>
+								<span id="serversNote">—</span>
+								<svg class="lucide lucide-chevron-down lucide-aux" aria-hidden="true" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></svg>
+							</button>
+							<div
+								class="metric-popover"
+								id="serversDetailPopover"
+								role="region"
+								aria-labelledby="serversDetailTitle"
+								hidden
+							>
+								<div class="metric-popover-head">
+									<strong id="serversDetailTitle">Órgãos considerados</strong>
+									<button class="metric-popover-close" id="serversDetailClose" type="button" aria-label="Fechar relação de órgãos">
+										<svg class="lucide lucide-x lucide-aux" aria-hidden="true" viewBox="0 0 24 24"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+									</button>
+								</div>
+								<p id="serversDetailContext"></p>
+								<ul id="serversAgencyList"></ul>
+								<small>A relação considera a competência e os filtros ativos.</small>
+							</div>
+						</div>
+						<small class="competence-progress" id="competenceProgress" hidden>
+							<span aria-hidden="true"></span>
+							Competência em andamento
+						</small>
 						<div class="metric-footer">
 							<span>Na competência selecionada</span
 							><b id="serversPeriodLabel">—</b>

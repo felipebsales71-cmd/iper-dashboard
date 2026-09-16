@@ -893,8 +893,11 @@ body[data-iframe-mode="dashboard"] .dashboard-shell {
 	border-radius: 10px;
 	background: #fff;
 	box-shadow: none;
-	overflow: hidden;
+	overflow: visible;
 	position: relative;
+}
+.metric-card.has-open-popover {
+	z-index: 30;
 }
 .metric-card:after {
 	display: none;
@@ -980,6 +983,180 @@ body[data-iframe-mode="dashboard"] .dashboard-shell {
 }
 .metric-card > small .lucide-trending-down {
 	color: #c44e58;
+}
+.metric-disclosure {
+	position: relative;
+	min-height: 24px;
+	margin-bottom: 8px;
+}
+.metric-detail-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	min-height: 28px;
+	margin: -3px 0 0 -6px;
+	padding: 3px 6px;
+	border: 0;
+	border-radius: 7px;
+	background: transparent;
+	color: #2b66ad;
+	font-family: var(--font-sans);
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 16px;
+	text-align: left;
+	text-decoration: underline;
+	text-decoration-color: rgba(43, 102, 173, 0.38);
+	text-decoration-thickness: 1px;
+	text-underline-offset: 3px;
+	cursor: pointer;
+	transition: 0.18s ease;
+}
+.metric-detail-button:hover {
+	background: #eef5fc;
+	text-decoration-color: #2b66ad;
+}
+.metric-detail-button:focus-visible,
+.metric-popover-close:focus-visible {
+	outline: 3px solid rgba(43, 102, 173, 0.22);
+	outline-offset: 2px;
+}
+.metric-detail-button:disabled {
+	cursor: default;
+	opacity: 0.68;
+	text-decoration: none;
+}
+.metric-detail-button .lucide-chevron-down {
+	transition: transform 0.18s ease;
+}
+.metric-detail-button[aria-expanded="true"] .lucide-chevron-down {
+	transform: rotate(180deg);
+}
+.metric-popover {
+	position: absolute;
+	z-index: 40;
+	left: 0;
+	top: calc(100% + 7px);
+	width: min(310px, calc(100vw - 48px));
+	max-height: 280px;
+	overflow: auto;
+	padding: 14px;
+	border: 1px solid #c8d8ea;
+	border-radius: 10px;
+	background: #fff;
+	color: #12345a;
+	box-shadow: 0 14px 34px rgba(18, 52, 90, 0.16);
+}
+.metric-popover[hidden] {
+	display: none;
+}
+.metric-popover-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+.metric-popover-head > strong {
+	font-size: 13px;
+	font-weight: 700;
+	line-height: 18px;
+}
+.metric-popover-close {
+	display: inline-grid;
+	place-items: center;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	border: 1px solid transparent;
+	border-radius: 7px;
+	background: transparent;
+	color: #54708f;
+	cursor: pointer;
+}
+.metric-popover-close:hover {
+	border-color: #d9e5f2;
+	background: #f8fafc;
+	color: #2b66ad;
+}
+.metric-popover > p {
+	margin: 6px 0 10px;
+	color: #5f7288;
+	font-size: 12px;
+	line-height: 16px;
+}
+.metric-popover ul {
+	display: grid;
+	gap: 6px;
+	max-height: 150px;
+	margin: 0;
+	padding: 0 2px 0 0;
+	overflow: auto;
+	list-style: none;
+}
+.metric-popover li {
+	position: relative;
+	padding: 7px 9px 7px 25px;
+	border: 1px solid #e2ebf1;
+	border-radius: 8px;
+	background: #f8fafc;
+	font-family: var(--font-sans);
+	font-size: 12px;
+	font-weight: 600;
+	line-height: 16px;
+}
+.metric-popover li::before {
+	content: "";
+	position: absolute;
+	left: 10px;
+	top: 50%;
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: #2b66ad;
+	transform: translateY(-50%);
+}
+.metric-popover > small {
+	display: block;
+	margin-top: 10px;
+	color: #5f7288;
+	font-size: 11px;
+	font-weight: 400;
+	line-height: 15px;
+}
+.metric-card > .competence-progress {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	margin: 0 0 10px;
+	padding: 4px 8px;
+	border: 1px solid #f0d38f;
+	border-radius: 999px;
+	background: #fff8e5;
+	color: #8a640f;
+	font-family: var(--font-sans);
+	font-size: 10px;
+	font-weight: 700;
+	line-height: 15px;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+}
+.metric-card > .competence-progress[hidden] {
+	display: none;
+}
+.metric-card > .competence-progress > span {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: #e1a12a;
+	box-shadow: 0 0 0 3px rgba(225, 161, 42, 0.15);
+}
+body[data-iframe-mode="kpis"] .metric-popover {
+	position: fixed;
+	left: 50%;
+	top: 12px;
+	width: min(320px, calc(100vw - 24px));
+	max-height: calc(100vh - 24px);
+	transform: translateX(-50%);
 }
 .metric-footer {
 	margin: 10px 0 0 0;

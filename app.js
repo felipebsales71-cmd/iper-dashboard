@@ -181,8 +181,93 @@ function iconMarkup(name, extraClass = "") {
 	return `<svg class="lucide lucide-${kebabName} ${extraClass}" aria-hidden="true" viewBox="0 0 24 24">${path}</svg>`;
 }
 
-function agencySelectionLabel(count) {
-	return `${count} ${count === 1 ? "órgão" : "órgãos"} na seleção`;
+function agencyConsideredLabel(count) {
+	if (!count) return "Nenhum órgão considerado";
+	return `${count} ${count === 1 ? "órgão considerado" : "órgãos considerados"}`;
+}
+
+function latestCompetence() {
+	return uniqueValues(state.allRecords, "month")
+		.sort((a, b) => monthKey(a) - monthKey(b))
+		.at(-1) || "";
+}
+
+function setAgencyDisclosureOpen(open, restoreFocus = false) {
+	const toggle = $("#serversDetailToggle");
+	const popover = $("#serversDetailPopover");
+	if (!toggle || !popover) return;
+	const shouldOpen = Boolean(open && !toggle.disabled);
+	toggle.setAttribute("aria-expanded", String(shouldOpen));
+	popover.hidden = !shouldOpen;
+	toggle.closest(".metric-card")?.classList.toggle(
+		"has-open-popover",
+		shouldOpen,
+	);
+	if (!shouldOpen && restoreFocus) toggle.focus();
+	scheduleIframeHeight();
+}
+
+function renderAgencyDisclosure(rows, selectedMonth) {
+	const toggle = $("#serversDetailToggle");
+	const note = $("#serversNote");
+	const list = $("#serversAgencyList");
+	const context = $("#serversDetailContext");
+	const progress = $("#competenceProgress");
+	if (!toggle || !note || !list || !context || !progress) return;
+
+	const agencies = [...new Set(rows.map((row) => row.agency).filter(Boolean))]
+		.sort((a, b) => String(a).localeCompare(String(b), "pt-BR"));
+	note.textContent = agencyConsideredLabel(agencies.length);
+	toggle.disabled = agencies.length === 0;
+	toggle.setAttribute(
+		"aria-label",
+		agencies.length
+			? `${agencyConsideredLabel(agencies.length)}. Exibir relação.`
+			: "Nenhum órgão considerado nesta competência.",
+	);
+	context.textContent = selectedMonth
+		? `Competência: ${selectedMonth.replace("/", " de ")}`
+		: "Competência não informada";
+	list.innerHTML = agencies
+		.map((agency) => `<li>${escapeHtml(agency)}</li>`)
+		.join("");
+
+	const isLatestCompetence =
+		Boolean(selectedMonth) &&
+		selectedMonth === latestCompetence();
+	progress.hidden = !isLatestCompetence;
+
+	if (!agencies.length) setAgencyDisclosureOpen(false);
+}
+
+function initAgencyDisclosure() {
+	const toggle = $("#serversDetailToggle");
+	const popover = $("#serversDetailPopover");
+	const close = $("#serversDetailClose");
+	if (!toggle || !popover || !close) return;
+
+	toggle.addEventListener("click", () => {
+		setAgencyDisclosureOpen(
+			toggle.getAttribute("aria-expanded") !== "true",
+		);
+	});
+	close.addEventListener("click", () =>
+		setAgencyDisclosureOpen(false, true),
+	);
+	document.addEventListener("click", (event) => {
+		if (
+			toggle.getAttribute("aria-expanded") === "true" &&
+			!event.target.closest(".metric-disclosure")
+		)
+			setAgencyDisclosureOpen(false);
+	});
+	document.addEventListener("keydown", (event) => {
+		if (
+			event.key === "Escape" &&
+			toggle.getAttribute("aria-expanded") === "true"
+		)
+			setAgencyDisclosureOpen(false, true);
+	});
 }
 
 function measureIframeContentHeight() {
@@ -373,9 +458,7 @@ function renderIframeKpis() {
 		competenceNote.innerHTML = `${iconMarkup(delta >= 0 ? "trendingUp" : "trendingDown")} ${PERCENT.format(Math.abs(delta))} frente à competência anterior`;
 	}
 
-	$("#serversNote").textContent = agencySelectionLabel(
-		new Set(competenceRows.map((row) => row.agency).filter(Boolean)).size,
-	);
+	renderAgencyDisclosure(competenceRows, selectedMonth);
 
 	$("#annualPeriodLabel").textContent = selectedMonth
 		? `Jan a ${selectedMonth}`
@@ -589,10 +672,9 @@ function renderKpis(scopes) {
 	} else {
 		competenceNote.innerHTML = `${iconMarkup(delta >= 0 ? "trendingUp" : "trendingDown")} ${PERCENT.format(Math.abs(delta))} frente à competência anterior`;
 	}
-	$("#serversNote").textContent = agencySelectionLabel(
-		new Set(
-			scopes.competenceRows.map((row) => row.agency).filter(Boolean),
-		).size,
+	renderAgencyDisclosure(
+		scopes.competenceRows,
+		scopes.selectedMonth,
 	);
 	const monthName = scopes.selectedMonth
 		? scopes.selectedMonth.replace("/", " de ")
@@ -1255,6 +1337,7 @@ function initEvents() {
 }
 
 initIframeResizeMessaging();
+initAgencyDisclosure();
 
 if (iframeMode === "kpis") {
 	loadData();
