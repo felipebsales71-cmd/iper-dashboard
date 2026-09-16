@@ -940,7 +940,7 @@ body[data-iframe-mode="dashboard"] .dashboard-shell {
 	width: 36px;
 	height: 36px;
 	border-radius: 8px;
-	border: 1px solid currentColor;
+	border: 1px solid transparent;
 	font-style: normal;
 }
 .metric-card-head i .lucide {
@@ -949,14 +949,17 @@ body[data-iframe-mode="dashboard"] .dashboard-shell {
 }
 .metric-blue .metric-card-head i {
 	color: #4d90bd;
+	border-color: #c2d1e8;
 	background: #eef7fd;
 }
 .metric-green .metric-card-head i {
 	color: #438c40;
+	border-color: #cddeaf;
 	background: #f1f8e9;
 }
 .metric-yellow .metric-card-head i {
 	color: #a67914;
+	border-color: #e8d59e;
 	background: #fff8e5;
 }
 .metric-card > strong {
