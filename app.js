@@ -164,6 +164,25 @@ function safeNumber(value) {
 	return Number(value) || 0;
 }
 
+function normalizeFilterText(value = "") {
+	return normalizeText(value)
+		.replace(/[^A-Z0-9]+/g, " ")
+		.trim()
+		.replace(/\s+/g, " ");
+}
+
+function shouldIgnoreRecord(row) {
+	const columnZ = normalizeFilterText(
+		row?.category ?? row?.classification ?? row?.columnZ,
+	);
+	const columnC = normalizeFilterText(row?.payroll ?? row?.columnC);
+	return (
+		columnZ === "GRATIFICACAO" ||
+		columnC.includes("APO GNN") ||
+		columnC.includes("PEN GNN")
+	);
+}
+
 // Lucide Icons v0.468.0. Apenas os ícones dinâmicos utilizados são mantidos aqui.
 function iconMarkup(name, extraClass = "") {
 	const paths = {
@@ -351,7 +370,9 @@ async function loadData({ preserveFilters = false, announce = false } = {}) {
 	state.version = state.meta.version || state.meta.updatedAt || null;
 	state.allRecords = (
 		Array.isArray(payload.records) ? payload.records : []
-	).map((row, index) => {
+	)
+		.filter((row) => !shouldIgnoreRecord(row))
+		.map((row, index) => {
 		const serverType = inferServerType(row);
 		const patronal = safeNumber(row.patronal);
 		const insured = safeNumber(row.insured);
@@ -1289,7 +1310,7 @@ function initEvents() {
 			String(!panel.hidden),
 		);
 		scheduleIframeHeight();
-	});
+		});
 	$("#resetFilters").addEventListener("click", resetFilters);
 	$("#refreshData").addEventListener("click", () =>
 		checkForDashboardUpdate(true),

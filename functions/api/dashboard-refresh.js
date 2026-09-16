@@ -24,6 +24,31 @@ function validatePayload(payload) {
   }
 }
 
+function normalizeFilterText(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Z0-9]+/gi, ' ')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toUpperCase();
+}
+
+function shouldIgnoreRecord(row) {
+  const columnZ = normalizeFilterText(row?.category ?? row?.classification ?? row?.columnZ);
+  const columnC = normalizeFilterText(row?.payroll ?? row?.columnC);
+  return (
+    columnZ === 'GRATIFICACAO' ||
+    columnC.includes('APO GNN') ||
+    columnC.includes('PEN GNN')
+  );
+}
+
+function filterIgnoredRecords(payload) {
+  payload.records = payload.records.filter((row) => !shouldIgnoreRecord(row));
+  return payload;
+}
+
 export async function onRequestPost(context) {
   if (!context.env.IPER_DATA) {
     return responseJson({ error: 'Binding R2 IPER_DATA não configurado.' }, 503);
@@ -74,6 +99,7 @@ export async function onRequestPost(context) {
     }
 
     validatePayload(payload);
+    filterIgnoredRecords(payload);
 
     const updatedAt = String(payload?.meta?.updatedAt || eventPayload?.timestamp || new Date().toISOString());
     const version = `${updatedAt}:${Date.now()}`;

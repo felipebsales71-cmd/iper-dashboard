@@ -45,6 +45,7 @@ function doGet() {
         notes: [
           'O indicador Arrecadado acumulado do ano utiliza apenas Patronal + Segurado.',
           'Os demais totais de arrecadação mantêm Patronal + Segurado + Compensação.',
+          'Linhas com GRATIFICAÇÃO na coluna Z ou APO GNN/PEN GNN na coluna C são desconsideradas.',
           'Unidades classificadas no Poder GOVERNO são consolidadas como GOV; SESAU permanece separada.',
           'O tipo de servidor é lido da coluna TIPO DE SERVIDOR, quando disponível, ou inferido pela folha.'
         ]
@@ -273,6 +274,14 @@ function readBancoDeDados_(sheet) {
   };
 
   return values.slice(1).reduce(function(records, row) {
+    const columnC = normalizeHeader_(row[2]);
+    const columnZ = normalizeHeader_(row[25]);
+    if (
+      columnZ === 'GRATIFICACAO' ||
+      columnC.indexOf('APO GNN') !== -1 ||
+      columnC.indexOf('PEN GNN') !== -1
+    ) return records;
+
     const agency = text_(row[col.ORGAO]);
     const monthName = text_(row[col.COMPETENCIA]);
     const year = integerText_(row[col.ANO]);

@@ -32,6 +32,31 @@ function validatePayload(payload) {
   return payload;
 }
 
+function normalizeFilterText(value) {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Z0-9]+/gi, ' ')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toUpperCase();
+}
+
+function shouldIgnoreRecord(row) {
+  const columnZ = normalizeFilterText(row?.category ?? row?.classification ?? row?.columnZ);
+  const columnC = normalizeFilterText(row?.payroll ?? row?.columnC);
+  return (
+    columnZ === 'GRATIFICACAO' ||
+    columnC.includes('APO GNN') ||
+    columnC.includes('PEN GNN')
+  );
+}
+
+function filterIgnoredRecords(payload) {
+  payload.records = payload.records.filter((row) => !shouldIgnoreRecord(row));
+  return payload;
+}
+
 async function fetchFreshPayload(env) {
   const endpointValue = env.GOOGLE_SHEETS_ENDPOINT || DEFAULT_GOOGLE_SHEETS_ENDPOINT;
   const endpoint = new URL(endpointValue);
@@ -59,6 +84,7 @@ async function fetchFreshPayload(env) {
   }
 
   validatePayload(payload);
+  filterIgnoredRecords(payload);
   const version = String(payload?.meta?.updatedAt || new Date().toISOString());
   payload.meta = {
     ...(payload.meta || {}),
