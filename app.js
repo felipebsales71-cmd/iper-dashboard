@@ -53,6 +53,9 @@ const DATE_TIME = new Intl.DateTimeFormat("pt-BR", {
 });
 
 const iframeMode = document.body.dataset.iframeMode || "full";
+const IFRAME_PARENT_ORIGIN = "https://www.iper.rr.gov.br";
+let iframeResizeFrame = 0;
+let lastIframeHeight = 0;
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -161,6 +164,69 @@ function safeNumber(value) {
 	return Number(value) || 0;
 }
 
+// Lucide Icons v0.468.0. Apenas os ícones dinâmicos utilizados são mantidos aqui.
+function iconMarkup(name, extraClass = "") {
+	const paths = {
+		trendingUp:
+			'<path d="m22 7-8.5 8.5-5-5L2 17"></path><path d="M16 7h6v6"></path>',
+		trendingDown:
+			'<path d="m22 17-8.5-8.5-5 5L2 7"></path><path d="M16 17h6v-6"></path>',
+	};
+	const path = paths[name];
+	if (!path) return "";
+	const kebabName = name.replace(
+		/[A-Z]/g,
+		(letter) => `-${letter.toLowerCase()}`,
+	);
+	return `<svg class="lucide lucide-${kebabName} ${extraClass}" aria-hidden="true" viewBox="0 0 24 24">${path}</svg>`;
+}
+
+function agencySelectionLabel(count) {
+	return `${count} ${count === 1 ? "órgão" : "órgãos"} na seleção`;
+}
+
+function measureIframeContentHeight() {
+	return Math.ceil(
+		Math.max(
+			document.body.scrollHeight,
+			document.body.offsetHeight,
+			document.documentElement.scrollHeight,
+			document.documentElement.offsetHeight,
+		),
+	);
+}
+
+function postIframeHeight() {
+	iframeResizeFrame = 0;
+	if (iframeMode !== "dashboard" || window.parent === window) return;
+	const height = measureIframeContentHeight();
+	if (!Number.isFinite(height) || height <= 0 || height === lastIframeHeight)
+		return;
+	lastIframeHeight = height;
+	window.parent.postMessage(
+		{ type: "iper:iframe-resize", id: "arrecadacao", height },
+		IFRAME_PARENT_ORIGIN,
+	);
+}
+
+function scheduleIframeHeight() {
+	if (iframeMode !== "dashboard") return;
+	cancelAnimationFrame(iframeResizeFrame);
+	iframeResizeFrame = requestAnimationFrame(() =>
+		requestAnimationFrame(postIframeHeight),
+	);
+}
+
+function initIframeResizeMessaging() {
+	if (iframeMode !== "dashboard") return;
+	window.addEventListener("load", scheduleIframeHeight, { once: true });
+	window.addEventListener("resize", scheduleIframeHeight, { passive: true });
+	if ("ResizeObserver" in window) {
+		const observer = new ResizeObserver(scheduleIframeHeight);
+		observer.observe(document.body);
+	}
+}
+
 async function loadData({ preserveFilters = false, announce = false } = {}) {
 	const saved = preserveFilters ? captureFilters() : null;
 	let payload;
@@ -233,6 +299,7 @@ async function loadData({ preserveFilters = false, announce = false } = {}) {
 
 	if (iframeMode === "kpis") {
 		renderIframeKpis();
+		scheduleIframeHeight();
 		return;
 	}
 
@@ -246,6 +313,7 @@ async function loadData({ preserveFilters = false, announce = false } = {}) {
 	updateConnectionStatus(live);
 	updateStoryMetrics();
 	startVersionPolling();
+	scheduleIframeHeight();
 
 	if (announce) showToast("Dados do dashboard atualizados.");
 }
@@ -298,16 +366,16 @@ function renderIframeKpis() {
 
 	$("#serversKpi").textContent = INTEGER.format(servers);
 
-	$("#competenceRevenueNote").textContent =
-		delta === null
-			? "Sem competência anterior para comparação"
-			: `${delta >= 0 ? "▲" : "▼"} ${PERCENT.format(
-					Math.abs(delta),
-				)} frente à competência anterior`;
+	const competenceNote = $("#competenceRevenueNote");
+	if (delta === null) {
+		competenceNote.textContent = "Sem competência anterior para comparação";
+	} else {
+		competenceNote.innerHTML = `${iconMarkup(delta >= 0 ? "trendingUp" : "trendingDown")} ${PERCENT.format(Math.abs(delta))} frente à competência anterior`;
+	}
 
-	$("#serversNote").textContent = `${
-		new Set(competenceRows.map((row) => row.agency).filter(Boolean)).size
-	} órgãos na seleção`;
+	$("#serversNote").textContent = agencySelectionLabel(
+		new Set(competenceRows.map((row) => row.agency).filter(Boolean)).size,
+	);
 
 	$("#annualPeriodLabel").textContent = selectedMonth
 		? `Jan a ${selectedMonth}`
@@ -495,6 +563,7 @@ function renderAll() {
 	renderFundAccumulated(scopes);
 	renderServers(scopes);
 	renderAgencyRanking(scopes);
+	scheduleIframeHeight();
 }
 
 function renderKpis(scopes) {
@@ -514,12 +583,17 @@ function renderKpis(scopes) {
 	$("#competenceRevenueKpi").textContent =
 		`R$ ${MONEY.format(competenceRevenue)}`;
 	$("#serversKpi").textContent = INTEGER.format(servers);
-	$("#competenceRevenueNote").textContent =
-		delta === null
-			? "Sem competência anterior para comparação"
-			: `${delta >= 0 ? "▲" : "▼"} ${PERCENT.format(Math.abs(delta))} frente à competência anterior`;
-	$("#serversNote").textContent =
-		`${new Set(scopes.competenceRows.map((row) => row.agency).filter(Boolean)).size} órgãos na seleção`;
+	const competenceNote = $("#competenceRevenueNote");
+	if (delta === null) {
+		competenceNote.textContent = "Sem competência anterior para comparação";
+	} else {
+		competenceNote.innerHTML = `${iconMarkup(delta >= 0 ? "trendingUp" : "trendingDown")} ${PERCENT.format(Math.abs(delta))} frente à competência anterior`;
+	}
+	$("#serversNote").textContent = agencySelectionLabel(
+		new Set(
+			scopes.competenceRows.map((row) => row.agency).filter(Boolean),
+		).size,
+	);
 	const monthName = scopes.selectedMonth
 		? scopes.selectedMonth.replace("/", " de ")
 		: "—";
@@ -812,7 +886,7 @@ function renderAgencyRanking(scopes) {
 	container.innerHTML = data
 		.map(
 			(item, index) =>
-				`<button class="agency-row" type="button" data-agency="${escapeHtml(item.label)}"><span class="agency-name"><i class="agency-rank">${index + 1}</i><strong title="${escapeHtml(item.label)}">${escapeHtml(item.label)}</strong></span><span class="agency-bar-track"><i class="agency-bar-fill" style="width:${Math.max(1, (item.value / max) * 100)}%"></i></span><span class="agency-value">${escapeHtml(MONEY.format(item.value))}</span><span class="agency-share">${escapeHtml(PERCENT.format(total ? item.value / total : 0))}</span></button>`,
+				`<button class="agency-row" type="button" aria-pressed="${String(scopes.filters.agencyFilter === item.label)}" data-agency="${escapeHtml(item.label)}"><span class="agency-name"><i class="agency-rank">${index + 1}</i><strong title="${escapeHtml(item.label)}">${escapeHtml(item.label)}</strong></span><span class="agency-bar-track"><i class="agency-bar-fill" style="width:${Math.max(1, (item.value / max) * 100)}%"></i></span><span class="agency-value">${escapeHtml(MONEY.format(item.value))}</span><span class="agency-share">${escapeHtml(PERCENT.format(total ? item.value / total : 0))}</span></button>`,
 		)
 		.join("");
 	$$("[data-agency]", container).forEach((button) =>
@@ -935,7 +1009,8 @@ async function checkForDashboardUpdate(manual = false) {
 	const button = $("#refreshData");
 	if (manual) {
 		button.disabled = true;
-		button.textContent = "Verificando…";
+		button.classList.add("is-loading");
+		button.querySelector("span").textContent = "Verificando…";
 	}
 	try {
 		const response = await fetch(`/api/dashboard-version?_=${Date.now()}`, {
@@ -964,7 +1039,9 @@ async function checkForDashboardUpdate(manual = false) {
 	} finally {
 		if (manual) {
 			button.disabled = false;
-			button.textContent = "Verificar atualização";
+			button.classList.remove("is-loading");
+			button.querySelector("span").textContent =
+				"Verificar atualização";
 		}
 	}
 }
@@ -1125,10 +1202,11 @@ function initEvents() {
 	$("#toggleAdvancedFilters").addEventListener("click", (event) => {
 		const panel = $("#advancedFilters");
 		panel.hidden = !panel.hidden;
-		event.currentTarget.setAttribute(
+		 event.currentTarget.setAttribute(
 			"aria-expanded",
 			String(!panel.hidden),
 		);
+		scheduleIframeHeight();
 	});
 	$("#resetFilters").addEventListener("click", resetFilters);
 	$("#refreshData").addEventListener("click", () =>
@@ -1175,6 +1253,8 @@ function initEvents() {
 		});
 	}
 }
+
+initIframeResizeMessaging();
 
 if (iframeMode === "kpis") {
 	loadData();
